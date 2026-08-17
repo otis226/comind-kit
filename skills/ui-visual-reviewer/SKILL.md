@@ -14,7 +14,7 @@ When the runtime supports isolated subagents, prefer running this skill in a fre
 
 Do not trust the implementer's claim that the UI is correct. Inspect rendered evidence and design authority yourself.
 
-Resolve project evidence and design authority from the current repository. Compose this skill with `ui-review`, `product-ui-critique`, and `design-parity` when relevant.
+Resolve project-specific evidence and design authority from the current repository. Compose this skill with `ui-review`, `product-ui-critique`, and `design-parity` when relevant.
 
 ## 1. Resolve review mode
 
