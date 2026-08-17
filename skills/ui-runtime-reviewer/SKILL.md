@@ -14,7 +14,7 @@ When the runtime supports isolated subagents, prefer running this skill in a fre
 
 Do not trust implementation claims. Exercise the actual candidate yourself.
 
-Resolve current product/business constraints from the current repository, and use `runtime-regression` when evidence must be carried across candidate changes.
+Resolve project-specific constraints from the current repository. Use `runtime-regression` when evidence must be carried across candidate changes.
 
 ## 1. Resolve scope
 
