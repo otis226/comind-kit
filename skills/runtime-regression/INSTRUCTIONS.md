@@ -1,34 +1,34 @@
 # runtime-regression
 
-## Mục đích
+## Purpose
 
-Dùng khi một workflow đã từng PASS bằng real browser/UAT nhưng product tiếp tục có commit mới trước final acceptance/merge.
+Use this workflow when a feature previously PASSed real browser/UAT verification but the product receives additional commits before final acceptance or merge.
 
-Skill này quy định cách không carry-forward runtime evidence sai qua product SHA khác nhau. Nó dùng được độc lập; nếu task có exact design parity thì evidence cũng cấp cho Interaction/Business/Regression concerns của `skills/design-parity.md`.
+It prevents runtime evidence from being carried forward incorrectly across different candidate states. When exact design parity also applies, this evidence can support Interaction, Business, and Regression concerns in `design-parity`.
 
-## 1. Exact-SHA evidence rule
+## 1. Exact-candidate evidence rule
 
-Một runtime/UAT PASS chỉ chứng minh product state đã chạy.
+A runtime/UAT PASS proves only the candidate state that was actually exercised.
 
 ```text
 candidate A
 → critical journey PASS
 
 product changes → candidate B
-→ PASS của A không tự động cover B
+→ A's PASS does not automatically cover B
 ```
 
-Rerun theo impact, không replay toàn bộ history sau mỗi commit.
+Rerun based on impact rather than replaying the entire historical suite after every commit.
 
-- isolated visual change có thể chỉ cần targeted smoke;
-- state/API/cache/shared component thay đổi thì rerun journey tương ứng;
-- shared integration thay đổi nhiều surface thì rerun combined affected flow.
+- isolated visual-only change may need only targeted smoke;
+- state/API/cache/shared-component changes should rerun affected journeys;
+- shared integration changes affecting many surfaces should rerun the combined affected flow.
 
-Nếu không chứng minh được change không ảnh hưởng journey cũ, ưu tiên rerun.
+If you cannot demonstrate that a change cannot affect prior critical behavior, prefer rerunning the relevant journey.
 
 ## 2. Current-candidate regression bridge
 
-Khi có historical browser baseline nhưng candidate đã đi tiếp:
+When a historical browser baseline exists but the candidate has advanced:
 
 ```text
 historical functional PASS
@@ -37,33 +37,32 @@ historical functional PASS
 → critical capabilities still PASS?
 ```
 
-Nếu phát hiện regression thật:
+If a real regression appears:
 
-- reopen root-cause investigation đúng scope;
-- fix đúng layer;
-- thêm/adjust test từ failure thật khi practical;
-- rerun affected journey.
+- reopen root-cause investigation at the correct scope;
+- fix the correct layer;
+- add/adjust a test from the observed failure when practical;
+- rerun the affected journey.
 
-Nếu PASS, carry-forward concern không bị impact và tiếp tục acceptance workflow.
+If the journey still PASSes, carry forward only concerns that the new changes demonstrably did not affect.
 
-## 3. Final Candidate critical journey
+## 3. Final-candidate critical journey
 
-Trước final readiness khi flow quan trọng:
+Before final readiness for an important flow, use the real application and matching dependency contracts when practical:
 
-- run real application + matching dependency contracts;
 - real browser;
-- critical mutation có network evidence khi relevant;
-- reload/persistence cho state quan trọng;
-- relevant page/console errors sạch;
-- không dùng mock-only evidence thay runtime behavior thật.
+- relevant critical mutation with network evidence;
+- reload/persistence for important state;
+- relevant page/console errors clean;
+- no mock-only evidence standing in for required runtime behavior.
 
-Nếu code thay đổi sau final journey, rerun affected parts trước khi candidate mới kế thừa PASS.
+If code changes after this journey, rerun affected parts before the new candidate inherits PASS.
 
-## 4. Quan hệ với visual/design work
+## 4. Relationship to visual/design work
 
-Runtime PASS không chứng minh visual fidelity. Visual PASS không chứng minh workflow runtime.
+Runtime PASS does not prove visual fidelity. Visual PASS does not prove runtime workflow correctness.
 
-Nếu exact design parity áp dụng:
+With exact parity:
 
 ```text
 Structural/Pixel Visual
@@ -71,15 +70,15 @@ Structural/Pixel Visual
 = independent concerns of one candidate
 ```
 
-Nếu không có exact design, runtime regression vẫn dùng bình thường cùng coherence/design-quality visual review.
+Without exact design, runtime regression still applies alongside coherence/design-quality visual review.
 
-## 5. Multitask / orchestration
+## 5. Orchestration
 
-- read/search investigation có thể parallelize;
-- independent journey có thể parallelize nếu fixture/state không collision;
-- mutation-heavy journey cần fixture/ownership rõ;
-- không cho nhiều writer sửa cùng shared region không isolation;
-- Final Integration owner chịu combined result.
+- read/search investigation may be parallelized;
+- independent journeys may run in parallel when fixtures/state do not collide;
+- mutation-heavy journeys require clear fixture/ownership boundaries;
+- do not let multiple writers mutate the same shared region without isolation;
+- final integration owns the combined result.
 
 ## 6. Evidence handoff
 
@@ -97,4 +96,4 @@ Regression: PASS|FAIL|BLOCKED
 Evidence: <reviewer-accessible location>
 ```
 
-Journey chưa rerun nhưng change có thể ảnh hưởng nó thì không carry-forward PASS im lặng; ghi `NOT VERIFIED`/`BLOCKED` hoặc rerun.
+If a journey was not rerun and the new changes could affect it, do not silently carry forward PASS. Mark it `NOT VERIFIED`/`BLOCKED` or rerun it.

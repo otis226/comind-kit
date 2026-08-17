@@ -12,9 +12,9 @@ It does **not** choose project source priority, design authority, review mode, b
 
 Compose it with:
 
-- `skills/ui-design-authority.md` — what governs the design;
-- `skills/ui-review.md` — review routing and priority;
-- `skills/design-parity.md` — exact-reference acceptance when required;
+- `ui-design-authority` — what governs the design;
+- `ui-review` — review routing and priority;
+- `design-parity` — exact-reference acceptance when required;
 - `ui-visual-reviewer` — independent candidate verdict.
 
 Core principles:
@@ -46,7 +46,7 @@ No structural redesign is necessary.
 
 ## 2. Critique lenses
 
-Apply these inside the review order defined by `skills/ui-review.md`.
+Apply these inside the review order defined by `ui-review`.
 
 ### Task / Product UX
 
@@ -194,7 +194,7 @@ Do not invent KEEP items just to fill a template.
 
 ## 6. Priority contract
 
-Reuse CoMind priority language:
+Use this priority language:
 
 ```text
 P0     workflow/state/invariant/usability blocker
@@ -204,7 +204,7 @@ Ignore data difference, shared chrome, accepted delta, or non-actionable issue
 KEEP   preservation marker, not severity
 ```
 
-Do not add a parallel `Critical/Major/Minor` taxonomy unless the project explicitly requires it.
+Do not add a parallel Critical/Major/Minor taxonomy unless the project explicitly requires it.
 
 ## 7. Product-interface heuristics
 
@@ -220,7 +220,7 @@ Dense CRM/admin/engineering/finance/configuration/workflow screens can be correc
 
 Do not use cards as the default grouping mechanism.
 
-Before adding a container, ask whether hierarchy can be expressed with spacing, typography, alignment, divider, columns, or a subtle background region.
+Before adding a container, ask whether hierarchy can be expressed with spacing, typography, alignment, dividers, columns, or a subtle background region.
 
 Cards should communicate meaningful containment or interaction ownership.
 
@@ -243,8 +243,6 @@ Use typography for hierarchy before introducing containers. Check heading levels
 Check logical grouping, label placement, required treatment, field width/order, control choice, helper text, validation/defaults, dependencies, disabled/read-only states, and save/cancel/destructive actions.
 
 Do not replace a familiar standard control purely for novelty.
-
-Example: replacing Select with segmented controls only makes sense when option count, frequency, visibility benefit, and governing product patterns support it.
 
 ### Tables
 

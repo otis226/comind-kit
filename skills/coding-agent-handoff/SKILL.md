@@ -1,15 +1,11 @@
 ---
 name: coding-agent-handoff
 description: >-
-  Use for non-trivial coding handoffs or agent orchestration: resolve project/source/design authority, assign ownership, use vertical slices, and integrate evidence.
+  Use when handing a reviewed implementation task to coding agents or subagents and you need project-source resolution, UI design authority, ownership boundaries, vertical slicing, and final integration.
 ---
-
-<!-- comind-managed-skill: coding-agent-handoff -->
 
 # coding-agent-handoff
 
-Read `INSTRUCTIONS.md` in this skill directory and follow it as the complete CoMind workflow for this capability.
+Read `INSTRUCTIONS.md` in this skill directory and follow it as the complete workflow for this capability.
 
-This directory is the canonical CoMind skill package. Installed copies or symlinks are runtime distribution artifacts, not separate sources of truth.
-
-Compatibility note: `INSTRUCTIONS.md` predates the Agent Skill package migration and may mention legacy paths such as `skills/<name>.md`. Treat those references as the corresponding CoMind skill package `skills/<name>/SKILL.md`, or the installed sibling skill when running outside the CoMind repository. Never resolve a legacy CoMind skill path against the current product repository.
+When this workflow references another capability by name, use the installed sibling skill with that name.

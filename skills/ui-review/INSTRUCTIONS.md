@@ -1,26 +1,24 @@
 # ui-review
 
-## Mục đích
+## Purpose
 
-Dùng để review UI/UX khi có một hoặc nhiều nguồn sau:
+Use this workflow to review UI/UX when one or more of these are available:
 
-- exact design/reference;
-- implementation hiện tại;
-- established design system/product patterns;
+- an exact design/reference;
+- current implementation;
+- an established design system/product language;
 - derived product conventions;
-- greenfield design proposal.
+- a greenfield design proposal.
 
-Mục tiêu là tìm đúng gap, hiểu intent và phân biệt **business correctness**, **design authority** và **implementation detail**.
+The goal is to find the right gaps, understand intent, and keep **business correctness**, **design authority**, and **implementation detail** distinct.
 
-Nếu task có exact design acceptance, visual fidelity là deliverable. Nếu không có exact design, không dựng pixel parity giả; review consistency/quality theo authority thực tế của project.
+When exact-design acceptance applies, visual fidelity is a deliverable. Without exact design, do not invent a pixel-parity gate; review consistency and design quality against the actual authority.
 
-Khi review screenshot, mockup hoặc existing product UI, dùng `skills/product-ui-critique.md` như critique lens. Skill đó không thay source priority/design authority/review mode; nó chuẩn hóa cách nhận diện vấn đề, preservation/KEEP và anti-redesign discipline.
+Use `product-ui-critique` as the critique lens for screenshots, mockups, or existing product UI. It does not replace source priority or review-mode selection.
 
-## 1. Resolve authority trước review
+## 1. Resolve authority before review
 
-Đọc source priority của project và `skills/ui-design-authority.md` khi design authority chưa rõ.
-
-Review mode:
+Use current project source priority and `ui-design-authority` when design authority is unclear.
 
 ```text
 REFERENCE_BACKED → PARITY REVIEW
@@ -28,201 +26,199 @@ SYSTEM_BACKED / PRODUCT_DERIVED → COHERENCE REVIEW
 GREENFIELD → DESIGN QUALITY REVIEW
 ```
 
-Implementation hiện tại là evidence, không tự động là source of truth.
+Current implementation is evidence, not automatically the design source of truth.
 
 ## 2. Source priority
 
-Mặc định:
+Unless the project defines a more specific order, prefer:
 
-1. xác nhận mới nhất của người dùng/người có thẩm quyền;
-2. current canonical product/design source đúng project;
+1. latest confirmation from the user/authorized owner;
+2. current canonical product/design source for the project;
 3. confirmed project decisions;
-4. established/derived product patterns;
+4. established or reliably derived product patterns;
 5. current implementation.
 
-Nếu exact design mâu thuẫn business/security invariant mới hơn, invariant thắng và visual delta phải được ghi rõ.
+If an exact design conflicts with a newer business/security invariant, the invariant wins and the visual delta must be documented.
 
-## 3. Local-first và portable handoff
+## 3. Local-first and portable handoff
 
-Khi coding/runtime environment có local repositories:
+When local repositories are available:
 
-- inspect current HEAD + dirty state;
-- ưu tiên current working tree khi đó rõ ràng là source mới nhất cho đúng surface;
-- không reset về historical commit chỉ vì review cũ dùng commit đó;
-- dùng relative path/repo name trong handoff;
-- historical SHA dùng cho provenance/fallback, không phải target bắt buộc.
+- inspect current HEAD and dirty state;
+- prefer the current working tree when it is clearly the latest source for the required surface;
+- do not reset to a historical commit merely because an older review used it;
+- use repository names and relative paths in handoff;
+- use historical SHAs for provenance/fallback, not as mandatory targets unless authority requires them.
 
 ## 4. Exact reference handling
 
-Reference có thể là Figma/export/HTML/source/screenshot/spec hoặc equivalent.
+A reference may be Figma, exported source, HTML, screenshot, spec, or equivalent.
 
-Nếu matching source có thể render, ưu tiên source + screenshot thực tế hơn chỉ suy đoán từ screenshot tĩnh.
+When matching source can be rendered, prefer source plus real screenshots over guessing from a static screenshot alone.
 
-Không copy mù:
+Do not blindly copy:
 
 - mock data;
 - fake routing;
 - prototype-only state;
-- inline styling trái design system production;
-- lifecycle/permission/API không có contract.
+- inline styling that conflicts with the production system;
+- lifecycle/permission/API behavior without a production contract.
 
-Không xóa production capability hữu ích chỉ vì reference không thể hiện nó; classify intentional delta/out-of-scope trước.
+Do not remove useful production capability merely because the reference omits it. Classify intentional deltas/out-of-scope behavior first.
 
-## 5. Chốt visual scope
+## 5. Define visual scope
 
-Xác định:
+Identify:
 
 - screen-owned content;
-- shared app/project chrome;
-- state/role/tab/viewport đang review;
-- data differences cần ignore;
-- intentional product delta.
+- shared application/project chrome;
+- state/role/tab/viewport under review;
+- literal data differences to ignore;
+- intentional product deltas.
 
-Shared chrome có thể ảnh hưởng width/layout nhưng không mặc định là target của screen-specific conversion.
+Shared chrome may affect layout width but is not automatically part of a screen-specific conversion target.
 
-## 6. Screenshot-first cho PARITY
+## 6. PARITY review
 
-Khi exact reference render được:
+When an exact reference can be rendered:
 
 ```text
-render reference ở state/viewport đúng
+render reference at the required state/viewport
 → capture focused surface
-→ render production cùng điều kiện
+→ render production under equivalent conditions
 → capture equivalent surface
-→ nhìn 3–5 gap lớn nhất
-→ inspect DOM/CSS/token của đúng gap
+→ identify the 3–5 largest gaps
+→ inspect DOM/CSS/tokens for those gaps
 → fix
 → recapture
 ```
 
-Screenshot để phát hiện **cái gì sai**; DOM/CSS/metric để tìm **vì sao sai**.
+Screenshots show **what is wrong**; DOM/CSS/metrics help explain **why**.
 
-Không bắt đầu bằng hàng loạt px/metric nếu chưa biết visual gap chính.
+Do not begin with a large spreadsheet of pixel metrics before identifying the dominant visual gaps.
 
-## 7. COHERENCE REVIEW
+Use `design-parity` when exact-reference acceptance evidence is required.
 
-Khi không có exact design nhưng có system/product language, review candidate theo:
+## 7. COHERENCE review
+
+When there is no exact accepted screen design but a product/system language exists, review:
 
 - token/component reuse;
 - typography hierarchy;
-- spacing rhythm/density;
+- spacing rhythm and density;
 - surface/card/control grammar;
 - interaction conventions;
 - semantic colors/states;
 - icon family;
 - sibling-screen consistency;
 - responsive behavior;
-- information architecture theo workflow.
+- workflow-driven information architecture.
 
-Câu hỏi chính:
+Key question:
 
-> Nếu bỏ URL/tên feature, surface này có rõ ràng thuộc cùng product không, và nó có dùng đúng pattern cho công việc này không?
+> If the URL and feature name were hidden, would this surface clearly belong to the same product and use the right patterns for this job?
 
-Không yêu cầu screen mới giống pixel một sibling screen nếu intent khác.
+Do not pixel-match a sibling screen with a different purpose.
 
-## 8. DESIGN QUALITY REVIEW
+## 8. DESIGN QUALITY review
 
-Với greenfield/provisional contract, review:
+For greenfield/provisional authority, review:
 
-- hierarchy và scanability;
+- hierarchy and scanability;
 - task clarity;
-- primary/secondary action;
+- primary/secondary actions;
 - information density;
 - feedback/state handling;
 - accessibility baseline;
 - responsive baseline;
-- consistency với Minimal Design Contract;
-- dấu hiệu generic/template-driven không phục vụ intent.
+- consistency with the Minimal Design Contract;
+- generic/template-driven treatment that does not serve the task.
 
-Mục tiêu không phải “độc đáo bằng mọi giá”. Mục tiêu là intentional, usable và coherent.
+The goal is not novelty. It is intentional, usable, coherent product UI.
 
-## 9. Thứ tự soi
+## 9. Review order
 
-Review từ lớn xuống nhỏ. Dùng `skills/product-ui-critique.md` như critique lens trong từng lớp, nhưng không để visual taste vượt lên trên workflow/IA/system authority.
+Review from large/structural concerns to local polish. Apply `product-ui-critique` within each layer without letting taste override workflow, information architecture, or authority.
 
-### 9.1 Behavior / State
+### Behavior / State
 
 - default/selected/expanded;
 - enabled/disabled;
 - loading/empty/error;
 - role/action visibility;
-- feedback sau action.
+- feedback after actions.
 
-### 9.2 Information Architecture
+### Information Architecture
 
 - grouping;
 - primary/secondary/supporting information;
 - fact/action ownership;
 - workflow order;
-- duplicate information.
+- duplicated information.
 
-### 9.3 Layout / Proportion
+### Layout / Proportion
 
-- grid/column/container;
+- grid/columns/container;
 - alignment;
 - whitespace distribution;
 - width/height constraints;
 - wrapping/truncation;
 - responsive behavior.
 
-### 9.4 Visual Hierarchy
+### Visual Hierarchy
 
 - title/context/action weight;
 - status/badge emphasis;
 - section separation;
 - muted hierarchy.
 
-### 9.5 Density / Spacing
+### Density / Spacing
 
-Mô tả gap trước, px sau. Ví dụ: card quá dày, header quá thấp, metadata quá sát, whitespace mất cân bằng.
+Describe the gap before prescribing pixels. Do not assume more whitespace is always better; operational product UI can benefit from density when it improves scanning, comparison, and speed.
 
-Đừng mặc định tăng whitespace. Với product UI vận hành, density có thể là lợi thế nếu hỗ trợ scan/comparison/speed.
-
-### 9.6 Visual Polish
+### Visual Polish
 
 - typography;
-- icon;
+- icons;
 - border/radius/shadow;
 - color/surface;
 - control variants;
 - minor alignment.
 
-### 9.7 Critique discipline
-
-Với existing design/screenshot:
+### Critique discipline
 
 - diagnose before redesign;
-- finding phải spatially specific khi evidence cho phép;
-- phân biệt observed fact với inference;
-- recommendation phải vượt qua change threshold trong `skills/product-ui-critique.md`;
-- ưu tiên smallest effective change;
-- không tạo issue chỉ để review có vẻ “đủ nhiều”.
+- make findings spatially specific when evidence allows;
+- separate direct observation from inference;
+- require recommendations to clear a meaningful change threshold;
+- prefer the smallest effective change;
+- do not manufacture issues merely to make a review look substantial.
 
 ## 10. Gap taxonomy
 
 - `Visual/Layout` — presentation/composition.
 - `Interaction/State` — behavior/state.
 - `Functional/Business` — workflow/capability/invariant.
-- `System coherence` — lệch design system/product grammar.
+- `System coherence` — mismatch with design-system/product grammar.
 - `Design quality` — greenfield/provisional design problem.
-- `Data difference` — literal data khác, thường ignore.
-- `Intentional current feature` — capability cần giữ.
+- `Data difference` — literal data difference, usually ignore.
+- `Intentional current feature` — production capability that must be preserved.
 - `Shared chrome / Out of scope`.
-- `Unknown` — authority chưa đủ rõ.
+- `Unknown` — authority is insufficient.
 
 ## 11. Priority
 
-- `P0` — sai workflow/state/invariant quan trọng hoặc usability blocker.
-- `P1` — IA/layout/hierarchy/system coherence lệch rõ, ảnh hưởng scan/action hoặc làm surface như product khác.
-- `P2` — density/spacing/polish/accessibility refinement không chặn flow chính.
-- `Ignore` — data/shared chrome/intentional delta ngoài scope.
-- `KEEP` — preservation marker cho phần đang đúng; **không phải severity**.
+- `P0` — important workflow/state/invariant failure or usability blocker.
+- `P1` — material IA/layout/hierarchy/system-coherence issue affecting scan/action or product consistency.
+- `P2` — localized density/spacing/polish/accessibility refinement that does not block the main flow.
+- `Ignore` — data/shared chrome/accepted delta outside scope.
+- `KEEP` — preservation marker for something already correct; **not a severity**.
 
-Không tạo thêm taxonomy `Critical/Major/Minor` song song nếu project không yêu cầu.
+Do not add a parallel Critical/Major/Minor taxonomy unless the project explicitly requires one.
 
-## 12. Gap format
+## 12. Finding format
 
-Với review implementation/handoff:
+For implementation review/handoff:
 
 ```text
 [P0/P1/P2] <gap>
@@ -243,7 +239,7 @@ Coding agent should inspect:
 ...
 ```
 
-Với screenshot/existing-design critique, có thể dùng format giàu evidence hơn:
+For screenshot/existing-design critique:
 
 ```text
 [P0/P1/P2] <finding>
@@ -264,23 +260,19 @@ Confidence:
 HIGH | MEDIUM | LOW
 ```
 
-## 12.1 Preservation output
-
-Một review meaningful nên ghi rõ phần đang tốt khi có thứ thực sự đáng giữ:
+When something important is already correct and a later fix could damage it, record:
 
 ```text
 KEEP — Do not change
 - ...
 ```
 
-Mục đích là ngăn vòng fix sau phá hỏng hierarchy, density, component choice hoặc workflow đã đúng.
-
-Không bịa KEEP item để lấp template.
+Do not invent KEEP items merely to fill a template.
 
 ## 13. Handoff rule
 
-Reviewer nói **kết quả cần đạt** và evidence/authority, không viết hộ toàn bộ implementation nếu coding agent có source/runtime context tốt hơn.
+A reviewer should describe the required outcome and its evidence/authority, not write the entire implementation when the coding agent can inspect source/runtime directly.
 
-Không kết luận `aligned` khi exact-design acceptance chưa có evidence theo `skills/design-parity.md`.
+Do not claim `aligned` for exact-design scope without the required `design-parity` evidence.
 
-Khi review chỉ ra ít hoặc không có gap material, được phép kết luận rằng không cần structural redesign; review không đồng nghĩa phải tìm thứ để sửa.
+If there are few or no material gaps, it is valid to conclude that no structural redesign is necessary.

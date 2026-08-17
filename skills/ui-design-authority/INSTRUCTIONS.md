@@ -1,15 +1,13 @@
 # ui-design-authority
 
-## Mục đích
+## Purpose
 
-Dùng trước implementation cho UI task khi cần xác định **AI được phép tự quyết design tới đâu**.
+Use this before meaningful user-visible UI implementation to determine **how much design freedom the AI actually has**.
 
-Skill này giải quyết hai lỗi đối lập:
+It prevents two opposite failures:
 
-1. có exact design nhưng coding agent tự redesign;
-2. không có exact design nên coding agent coi đó là quyền tự do tạo một visual language mới.
-
-Nguyên tắc:
+1. an exact accepted design exists, but the coding agent redesigns it;
+2. no exact screen design exists, so the coding agent assumes unlimited freedom to create a new visual language.
 
 ```text
 ABSENT SCREEN DESIGN != ABSENT DESIGN AUTHORITY
@@ -18,126 +16,108 @@ INHERIT BEFORE DERIVE
 DERIVE BEFORE INVENT
 ```
 
-Đây là workflow/design-governance policy, không phải design system của một project cụ thể.
+This is design-governance workflow, not a project-specific design system.
 
-## 1. Khi nào phải resolve
+## 1. When authority must be resolved
 
-Resolve design authority khi task user-visible có một trong các yếu tố:
+Resolve design authority for user-visible work involving one or more of:
 
-- screen/surface mới;
-- layout/composition mới;
-- component/pattern tương tác mới;
-- visual language mới hoặc thay đổi đáng kể;
-- form/table/detail/dashboard/navigation mới;
-- không có exact design nhưng agent phải quyết định UI;
-- reference/design system hiện có mâu thuẫn hoặc không đủ rõ.
+- a new screen/surface;
+- new layout/composition;
+- a new interaction pattern/component;
+- meaningful visual-language change;
+- a new form/table/detail/dashboard/navigation surface;
+- no exact design but the agent must make UI decisions;
+- conflicting or incomplete references/design-system evidence.
 
-Một patch nhỏ thuần copy, icon replacement hoặc token-aligned tweak có thể dùng authority đã rõ của surface mà không cần tạo manifest dài.
+Small copy, icon, or token-aligned tweaks may reuse already-clear surface authority without a long manifest.
 
 ## 2. Evidence hierarchy
 
-Tìm evidence theo project/source priority. Các loại evidence có thể gồm:
+Follow current project source priority. Useful evidence may include:
 
-- exact accepted design/prototype/spec cho đúng state;
-- formal design system, token, component library, `DESIGN.md`, Storybook hoặc equivalent;
-- current product screens cùng loại;
-- shared application chrome/pattern;
-- CSS/theme variables và reusable primitives;
-- product/design decisions đã xác nhận;
-- current implementation chỉ như evidence, không tự động là canonical design.
+- exact accepted design/prototype/spec for the required state;
+- formal design system, tokens, component library, design docs, Storybook, or equivalent;
+- current sibling product screens with similar intent;
+- shared application chrome/patterns;
+- CSS/theme variables and reusable primitives;
+- confirmed product/design decisions;
+- current implementation as evidence, not automatically canonical design.
 
-Không lấy framework default, template gallery hoặc taste của model làm authority khi evidence project đã tồn tại.
+Do not use framework defaults, template galleries, or model taste as authority when project evidence exists.
 
-## 3. Bốn design modes
+## 3. Four authority modes
 
 ### A. REFERENCE_BACKED
 
-Dùng khi có exact accepted design/reference cho surface/state.
+Use when an exact accepted design/reference is genuinely the target for the required surface/state.
 
-Việc một screenshot/Figma/export tồn tại **không tự động** làm nó thành acceptance target. Chỉ dùng `REFERENCE_BACKED` khi source đó thực sự được xác nhận hoặc có provenance đủ rõ là target cho đúng surface/state.
+The mere existence of a screenshot/Figma/export does not make it authoritative; provenance or explicit acceptance must support that role.
 
-Coding freedom:
+The implementation should:
 
-- implement structure/visual/interaction theo reference;
-- dùng production-safe equivalents khi reference chỉ là prototype;
-- giữ business/security/accessibility/integration contract của production.
+- follow reference structure/visual/interaction;
+- use production-safe equivalents where the reference is only a prototype;
+- preserve production business/security/accessibility/integration contracts.
 
-Không được:
+Do not:
 
-- redesign vì model thấy hướng khác “đẹp hơn”;
-- copy mock data/prototype lifecycle thành business rule;
-- xóa production capability chỉ vì reference không render nó.
+- redesign because another direction seems prettier;
+- copy mock data or prototype lifecycle into business rules;
+- remove required production capability merely because the reference does not render it.
 
-Acceptance:
-
-- `skills/design-parity.md` khi visual fidelity là deliverable.
+Use `design-parity` when exact visual fidelity is part of acceptance.
 
 ### B. SYSTEM_BACKED
 
-Dùng khi không có exact screen design nhưng có established design system hoặc product conventions đủ mạnh.
+Use when there is no exact screen design but an established design system or strong product convention exists.
 
-Agent được quyết định:
+The agent may decide information hierarchy, layout/composition, grouping, placement, feedback states, and which established pattern fits the task.
 
-- information hierarchy;
-- composition/layout;
-- grouping;
-- placement;
-- empty/loading/error presentation;
-- chọn pattern phù hợp từ system.
+It should not arbitrarily replace established:
 
-Agent không được tự ý thay:
-
-- typography system;
+- typography;
 - palette/semantic color grammar;
 - radius/elevation language;
-- control/form/table language;
+- form/table/control language;
 - icon family;
-- interaction convention đã established;
-- component primitive khi shared primitive hiện có đáp ứng đúng nhu cầu.
+- interaction conventions;
+- shared primitives that already satisfy the need.
 
-Mục tiêu: **new solution, same product language**.
+Goal: **new solution, same product language**.
 
 ### C. PRODUCT_DERIVED
 
-Dùng khi không có formal system đủ tin cậy nhưng product đã có đủ UI để suy ra convention.
+Use when there is no reliable formal system but enough existing UI exists to infer recurring conventions.
 
-Quy trình:
+Process:
 
-1. Chọn một tập nhỏ representative screens cùng product và gần intent nhất.
-2. Inspect recurring typography, spacing, control, surfaces, navigation, state feedback và density.
-3. Phân biệt recurring pattern với one-off implementation accident.
-4. Tạo `DERIVED DESIGN CONTRACT` ngắn.
-5. Gắn confidence cho convention quan trọng khi cần.
-
-Ví dụ output:
+1. choose a small set of representative screens from the same product and closest intent;
+2. inspect recurring typography, spacing, controls, surfaces, navigation, feedback, and density;
+3. distinguish repeated convention from one-off implementation accident;
+4. produce a short `DERIVED DESIGN CONTRACT`;
+5. attach confidence to material derived conventions when useful.
 
 ```text
-Inherited/high confidence:
+Inherited / high confidence:
 - compact table density
-- blue primary action
-- left navigation
+- primary action treatment
 
-Derived/medium confidence:
-- ~8px spacing rhythm
-- medium-radius surfaces
+Derived / medium confidence:
+- spacing rhythm
+- surface radius
 
 New proposal:
-- long edit flow uses a side panel because no equivalent form exists
+- side panel for a long edit flow because no equivalent form exists
 ```
 
-`DERIVED` không đồng nghĩa `CANONICAL`.
-
-Current implementation chỉ là evidence. Một convention chỉ đáng derive khi có recurring evidence từ representative surfaces hoặc project source đáng tin cậy; không biến một one-off screen thành design system chỉ vì nó đang tồn tại.
-
-Không tạo project-wide token/component/system rule chỉ vì một màn mới cần giải quyết layout. Chỉ formalize khi pattern đã lặp lại và reuse thực sự có giá trị.
+Derived does not mean canonical. Do not formalize project-wide tokens/components merely because one screen needs a layout solution.
 
 ### D. GREENFIELD
 
-Dùng khi chưa có exact reference, formal system hoặc existing UI đủ tin cậy.
+Use when there is no exact reference, reliable formal system, or sufficiently representative existing UI.
 
-Không đi thẳng từ requirement sang production styling tùy hứng.
-
-Tạo **Minimal Design Contract** trước:
+Do not jump from requirements straight to arbitrary styling. Define a **Minimal Design Contract** first:
 
 - product character/tone;
 - density;
@@ -151,13 +131,13 @@ Tạo **Minimal Design Contract** trước:
 - feedback/state behavior;
 - accessibility/responsive baseline.
 
-Contract phải đủ nhỏ để project bắt đầu nhanh. Không xây một enterprise design system trước khi có nhu cầu thật.
+Keep the contract small. Do not build an enterprise design system before repeated need exists.
 
-Sau first surface, review bằng `DESIGN_QUALITY`, rồi chỉ formalize thêm khi pattern bắt đầu lặp lại.
+After the first surface, review in DESIGN_QUALITY mode and formalize only patterns that begin to repeat.
 
-## 4. Progressive design maturity
+## 4. Progressive maturity
 
-Project có thể trưởng thành theo hướng:
+A product may mature through:
 
 ```text
 NONE
@@ -168,13 +148,13 @@ NONE
 → FORMAL DESIGN SYSTEM
 ```
 
-Không ép project nhỏ phải có token library, Figma hay Storybook chỉ để được phép code.
+Do not force a small project to adopt Figma, Storybook, or a token library merely to qualify for implementation.
 
-Mục tiêu là đủ governance để tránh inconsistency, không phải tạo ceremony.
+The goal is enough governance to avoid inconsistency, not ceremony.
 
-## 5. DESIGN MANIFEST
+## 5. Design Manifest
 
-Với UI task không trivial, main agent hoặc `ui-design-architect` trả manifest compact trước implementation:
+For non-trivial UI work, the main agent or `ui-design-architect` should return a compact manifest before implementation:
 
 ```text
 DESIGN AUTHORITY
@@ -211,46 +191,42 @@ Open ambiguity:
 - ... | NONE
 ```
 
-Manifest không phải spec pixel-by-pixel. Nó xác định **authority boundary** để implementer biết chỗ nào được quyết định và reviewer biết lấy gì làm baseline.
+The manifest is not a pixel-by-pixel spec. It defines the **authority boundary** for implementation and review.
 
-## 6. Khi nào gọi ui-design-architect
+## 6. When to use `ui-design-architect`
 
-Không cần gọi specialist cho mọi thay đổi UI.
+Prefer an independent design-architecture pass when:
 
-Nên gọi khi:
+- mode is PRODUCT_DERIVED or GREENFIELD and the task is meaningful;
+- SYSTEM_BACKED work introduces substantial new composition/patterns;
+- design sources conflict;
+- a decision may affect many screens;
+- the implementer risks inventing and self-certifying the same design.
 
-- mode là `PRODUCT_DERIVED` hoặc `GREENFIELD` và task không trivial;
-- `SYSTEM_BACKED` nhưng cần composition/pattern mới đáng kể;
-- nhiều nguồn design mâu thuẫn;
-- design decision có thể ảnh hưởng nhiều screen;
-- implementer có nguy cơ vừa invent vừa self-certify.
+Usually skip it when:
 
-Có thể không gọi khi:
-
-- `REFERENCE_BACKED` và exact source đã rõ;
-- patch nhỏ dùng pattern/component established rõ ràng;
-- task thuần visual fix với baseline hiện có không mơ hồ.
+- REFERENCE_BACKED authority is already exact and clear;
+- a small patch uses a well-established component/pattern;
+- the task is a localized visual fix with an unambiguous baseline.
 
 ## 7. Anti-slop guardrails
 
-Không dùng checklist thẩm mỹ cứng kiểu “không bao giờ gradient/card/Inter”. Thay vào đó áp dụng các rule sau:
+Do not rely on rigid aesthetic bans. Apply these principles instead:
 
-- Không introduce visual vocabulary mới khi vocabulary hiện có diễn đạt được task.
-- Không tạo primitive mới khi shared primitive hiện có đáp ứng semantics/interaction.
-- Không dùng arbitrary color/radius/shadow/spacing khi project có token/convention.
-- Không wrap mọi group thành card chỉ để tạo cảm giác “designed”.
-- Không duplicate cùng một fact qua header/summary/body/sidebar nếu không có workflow reason rõ ràng.
-- Không dùng color như decoration khi màu đó ngầm truyền semantic state/consequence.
-- Không dùng decorative metric/badge/gradient khi chúng không giúp action/decision.
-- Không biến mọi product thành generic dashboard/SaaS template.
-- Không ưu tiên novelty hơn workflow clarity.
-- Không invent field/state/permission/lifecycle để làm layout thuận tiện hơn.
-- Không dùng framework component default như design decision nếu product đã có wrapper/pattern riêng.
-- Không copy một project khác trong CoMind làm visual baseline nếu project hiện tại không xác nhận quan hệ đó.
+- do not introduce new visual vocabulary when existing language already expresses the task;
+- do not create a new primitive when a shared primitive satisfies the semantics/interaction;
+- do not use arbitrary color/radius/shadow/spacing when tokens/conventions exist;
+- do not wrap every group in a card merely to make it look designed;
+- do not duplicate the same fact across multiple regions without a workflow reason;
+- do not use color decoratively when it implies state or consequence;
+- do not add decorative metrics/badges/gradients without decision/action value;
+- do not turn every product into a generic dashboard/SaaS template;
+- do not prioritize novelty over workflow clarity;
+- do not invent fields, states, permissions, or lifecycle behavior to make layout easier;
+- do not treat framework defaults as design decisions when the product has its own wrappers/patterns;
+- do not import another project's visual language without explicit authority.
 
 ## 8. Review routing
-
-Sau implementation:
 
 ```text
 REFERENCE_BACKED
@@ -263,23 +239,23 @@ GREENFIELD
 → ui-visual-reviewer mode DESIGN_QUALITY
 ```
 
-Runtime/interaction vẫn do runtime reviewer hoặc project verification workflow cover.
+Runtime/interaction verification remains a separate concern.
 
-## 9. Block hay proceed
+## 9. Block vs proceed
 
-Không block chỉ vì thiếu exact mockup.
+Do not block merely because an exact mockup is absent.
 
-Chỉ `BLOCKED` khi unresolved decision thực sự làm agent không thể chọn design direction có trách nhiệm, ví dụ:
+Return `BLOCKED` only when unresolved authority materially prevents responsible design direction, for example:
 
-- authoritative references/product owners mâu thuẫn và không resolve được từ source;
-- target platform/viewport chưa biết nhưng materially làm thay đổi surface;
-- business/workflow choice chưa chốt và nó quyết định information architecture;
-- task yêu cầu thay đổi global design system nhưng chưa có authority cho thay đổi đó.
+- authoritative sources/owners conflict and source inspection cannot resolve them;
+- target platform/viewport is unknown and materially changes the surface;
+- unresolved business/workflow choice determines information architecture;
+- the task requires changing a global design system without authority to do so.
 
-Nếu không có blocker loại này, derive/propose **smallest reasonable contract**, đánh dấu uncertainty/proposal và tiếp tục. Không chuyển thiếu design thành preference questionnaire không cần thiết.
+Otherwise derive/propose the **smallest reasonable contract**, mark uncertainty/proposals, and continue.
 
 ## 10. Human acceptance
 
-AI design review có thể chứng minh consistency/quality nhưng không thay product acceptance của người dùng.
+AI design review can demonstrate consistency/quality but does not replace product acceptance.
 
-Với greenfield hoặc proposal lớn, final handoff phải nói rõ đâu là design decision mới để người dùng có thể chấp nhận/chỉnh hướng mà không nhầm đó là rule đã tồn tại.
+For greenfield or major proposals, final handoff should clearly identify new design decisions so a human can accept or redirect them without mistaking them for pre-existing rules.

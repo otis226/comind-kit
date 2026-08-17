@@ -1,29 +1,29 @@
 # pixel-parity-calibration
 
-## Mục đích
+## Purpose
 
-Dùng cùng `skills/design-parity.md` khi Structural Visual đã PASS nhưng Pixel Visual vẫn FAIL và residual mismatch có dấu hiệu đến từ intentional delta, fixture/data, deterministic clock hoặc capture/render noise thay vì product visual defect.
+Use this with `design-parity` when Structural Visual has PASSed but Pixel Visual still fails and residual mismatch may come from intentional deltas, fixtures/data, deterministic clock/state, or capture/render noise rather than a real product visual defect.
 
-Skill này không thay Structural Visual. Nó giúp quyết định residual nào phải sửa product và residual nào phải normalize verification.
+This workflow does not replace Structural Visual. It determines which residuals require product changes and which require verification normalization.
 
 ## 1. Exact product state
 
-Acceptance evidence phải gắn với product state truy xuất được.
+Acceptance evidence must identify the product state it actually exercised.
 
-Nếu browser render committed SHA + dirty WIP, screenshot dùng diagnose nhưng không được carry thành PASS của committed SHA.
+If a browser renders a committed SHA plus dirty WIP, screenshots may be used for diagnosis but must not be reported as PASS evidence for the clean committed SHA.
 
-Trước acceptance:
+Before acceptance:
 
-1. commit các hunk đã được chứng minh; hoặc
-2. bỏ có chủ đích hunk thử nghiệm không cần rồi recapture.
+1. commit the proven changes; or
+2. deliberately remove unneeded experimental changes and recapture.
 
-Không reset/xóa dirty worktree mù.
+Never reset/delete a dirty worktree blindly.
 
 ## 2. Residual classes
 
 ### A — Product visual defect
 
-Layout/hierarchy/action/spacing/wrapping thật sự sai authority.
+Layout, hierarchy, action placement, spacing, or wrapping genuinely violates authority.
 
 ```text
 fix product → targeted verify → commit → recapture
@@ -31,63 +31,63 @@ fix product → targeted verify → commit → recapture
 
 ### B — Intentional product/design delta
 
-Capability/product decision được chấp nhận nhưng exact reference không có.
+A valid capability/product decision differs from the exact reference.
 
-- document delta;
-- split stable comparable region khi cần;
-- exclusion/mask phải tối thiểu, deterministic, predeclared;
-- không mask Class A.
+- document the delta;
+- split a stable comparable region when useful;
+- keep exclusions/masks minimal, deterministic, and predeclared;
+- never mask Class A.
 
 ### C — Fixture/cardinality/literal-data mismatch
 
-Normalize deterministic data shape; không sửa CSS chỉ để match dataset.
+Normalize deterministic data shape. Do not change CSS merely to match a different dataset.
 
 ### D — Clock/state-derived text
 
-Freeze time/state hoặc seed semantic-equivalent fixture; không sửa business calculation chỉ để match snapshot.
+Freeze time/state or seed a semantically equivalent fixture. Do not change business calculations merely to match a snapshot.
 
 ### E — Capture/render noise
 
-Normalize crop, shared chrome, focus, motion, font/render variance trước khi đổi threshold.
+Normalize crop, shared chrome, focus, motion, font/render variance, and equivalent capture conditions before changing thresholds.
 
 ## 3. Calibration sequence
 
 ```text
 confirm exact clean candidate
 → classify A/B/C/D/E
-→ eliminate A bằng product fix
+→ eliminate A with product fixes
 → normalize C/D/E
 → predeclare B
 → recapture
 → evaluate threshold
 ```
 
-Không dùng mismatch ratio cũ sau khi product/fixture/crop thay đổi.
+Do not reuse an old mismatch ratio after product, fixture, crop, or capture conditions change.
 
 ## 4. Sub-crop / exclusion
 
-Chỉ hợp lệ khi:
+An exclusion is valid only when:
 
-- whole surface Structural PASS;
-- excluded area là documented B hoặc non-owned E;
-- không chứa known A;
-- config deterministic/reviewer-accessible;
-- report nói rõ exclude gì và vì sao;
-- semantic/interaction/business concern vẫn cover product-owned area bị exclude.
+- whole-surface Structural Visual already PASSes;
+- the excluded area is a documented Class B or non-owned Class E region;
+- it contains no known Class A defect;
+- configuration is deterministic and reviewer-accessible;
+- the report states what is excluded and why;
+- semantic/interaction/business concerns still cover product-owned behavior in that area.
 
-## 5. Threshold
+## 5. Threshold discipline
 
-Threshold chỉ có ý nghĩa sau calibration trên comparable deterministic evidence.
+A threshold is meaningful only after comparable deterministic evidence has been calibrated.
 
-Không tăng threshold chỉ vì current surface đang fail.
+Do not increase a threshold merely because the current candidate fails.
 
-Recalibration cần:
+Recalibration requires:
 
-- Structural PASS;
+- Structural Visual PASS;
 - Class A = NONE;
-- C/D/E normalized hợp lý;
-- B documented/split đúng;
-- repeated known-good captures chứng minh baseline noise.
+- C/D/E reasonably normalized;
+- B correctly documented/split;
+- repeated known-good captures that demonstrate baseline noise.
 
 ## 6. Handoff
 
@@ -104,6 +104,6 @@ Threshold/calibration:
 Evidence:
 ```
 
-Nếu working tree dirty, không claim evidence chứng minh PR HEAD.
+If the working tree is dirty, do not claim the evidence proves PR HEAD.
 
-Đây là reusable verification policy, không phải business/design rule của project cụ thể.
+This is reusable verification policy, not a project-specific business/design rule.

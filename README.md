@@ -3,6 +3,7 @@
 > **Reusable Agent Skills and specialist agents for building, reviewing, and shipping software with AI coding tools.**
 
 ![Public](https://img.shields.io/badge/repository-public-0f766e?style=flat-square)
+![MIT](https://img.shields.io/badge/license-MIT-2563eb?style=flat-square)
 ![Agent Skills](https://img.shields.io/badge/Agent%20Skills-portable-4f46e5?style=flat-square)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin%20%2B%20agents-d97706?style=flat-square)
 ![Project Neutral](https://img.shields.io/badge/scope-project--neutral-111827?style=flat-square)
@@ -128,8 +129,6 @@ senior-dev
   → READY FOR MANUAL CHECK
 ```
 
-Use this when you want one main agent to own delivery rather than manually composing many separate prompts.
-
 ### 2. Implement or improve a UI screen
 
 ```text
@@ -140,8 +139,6 @@ ui-design-authority
   → ui-runtime-reviewer when behavior changed
   → manual check
 ```
-
-This prevents a common failure mode: the coding agent invents its own visual language and then reviews its own work against that invention.
 
 ### 3. Match an exact design/reference
 
@@ -218,10 +215,11 @@ The plugin loads the same canonical skills plus the five specialist agents liste
 
 **Humans:** start with this README to understand what is available and which workflow fits the task.
 
-**AI runtimes:** use the installed `SKILL.md` files and runtime agent definitions as the actual operating instructions. This README is onboarding documentation, not the canonical agent policy.
+**AI maintainers:** start with `AGENTS.md` (Claude Code also sees `CLAUDE.md`). Installed runtimes use `SKILL.md`, optional `INSTRUCTIONS.md`, and runtime agent definitions as the operating instructions.
 
 ```text
 README.md        → human orientation
+AGENTS.md        → repository maintenance rules for AI
 skills/*         → canonical reusable workflows
 agents/*         → Claude Code specialist adapters
 .claude-plugin/* → Claude Code distribution metadata
@@ -239,12 +237,39 @@ CoMind Kit provides workflow instructions, not project truth.
 
 ---
 
+## Versioning
+
+Tagged releases follow Semantic Versioning. Before the first tag, `main` is the latest development line.
+
+For reproducible automation, pin a tagged release or commit once tags are available instead of implicitly tracking `main`. See `CHANGELOG.md` for public changes and compatibility notes.
+
+---
+
+## Contributing & security
+
+Contributions are welcome. Read `CONTRIBUTING.md` before changing a skill or agent, and run:
+
+```bash
+node scripts/validate-public.mjs
+```
+
+For sensitive reports involving secrets, private-data leakage, unsafe instructions, or supply-chain concerns, follow `SECURITY.md` instead of opening a public issue.
+
+---
+
 ## Repository structure
 
 ```text
 comind-kit/
 ├── README.md
+├── AGENTS.md
+├── CLAUDE.md
 ├── skills/                 # portable canonical Agent Skills
 ├── agents/                 # Claude Code specialist adapters
+├── scripts/                # public self-validation
 └── .claude-plugin/         # plugin + marketplace metadata
 ```
+
+## License
+
+MIT — see `LICENSE`.

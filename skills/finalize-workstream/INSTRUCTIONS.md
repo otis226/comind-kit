@@ -1,10 +1,8 @@
 # finalize-workstream
 
-## Mục đích
+## Purpose
 
-Dùng khi một workstream/feature đã đạt acceptance cần thiết và người dùng yêu cầu merge/finalize/cleanup.
-
-Workflow:
+Use this workflow when a feature/workstream has the required acceptance and an authorized user asks to merge, finalize, or clean it up.
 
 ```text
 accepted candidate
@@ -14,101 +12,90 @@ accepted candidate
 → merge
 → lightweight integrity check
 → cleanup
-→ knowledge sync
+→ durable knowledge/documentation update when applicable
 → COMPLETE / MERGED
 ```
 
-Đây là reusable workflow. Project-specific ship/deploy rule phải lấy từ current project instructions/project pack/source canonical, không hard-code vào core.
+This is reusable workflow policy. Project-specific ship/deploy rules must come from current project instructions, repository release policy, or other canonical project authority.
 
 ## 1. Merge authority
 
-Không tự merge chỉ vì agent/reviewer PASS.
+Do not merge merely because an agent or reviewer returned PASS.
 
-Merge cần chỉ thị rõ từ người dùng hoặc authority mà project đã xác định.
+Merge requires an explicit user instruction or another authority recognized by the current project.
 
-Nếu project yêu cầu exact-SHA sign-off, freeze SHA đó. Nếu project không yêu cầu explicit exact-SHA UAT cho loại change hiện tại, vẫn phải record candidate đang merge và evidence applicable.
+If the project requires exact-SHA sign-off, freeze that SHA. Otherwise still record the candidate being merged and the evidence that applies to it.
 
-Người dùng có thể explicit override một missing/non-critical gate hoặc chấp nhận known delta. Khi đó:
+A user may explicitly accept a known delta or override a missing non-critical gate. When that happens:
 
-- ghi rõ override/risk acceptance;
-- không giả vờ gate đã PASS;
-- không override safety/security blocker không thể được user instruction hợp thức hóa;
-- tiếp tục từ checkpoint hợp lệ thay vì restart toàn workflow.
+- record the override/risk acceptance;
+- do not relabel an unverified gate as PASS;
+- do not override a safety/security blocker that cannot legitimately be waived;
+- resume from the latest valid checkpoint rather than restarting the entire workflow.
 
-## 2. Freeze candidate
+## 2. Freeze the candidate
 
-Trước merge:
+Before merge:
 
-- đọc current PR/branch metadata;
-- verify HEAD/candidate expected;
-- verify dependent candidate khi multi-repo;
-- inspect relevant dirty/untracked state nếu local workspace;
-- không reset/xóa user work mù.
+- read current PR/branch metadata;
+- verify expected HEAD/candidate;
+- verify dependent candidates in multi-repo work;
+- inspect relevant dirty/untracked state when a local workspace exists;
+- never reset/delete user work blindly.
 
-Nếu exact signed-off candidate đã đổi và không có explicit acceptance:
+If an exact accepted candidate changed without explicit acceptance:
 
 ```text
 MERGE BLOCKED — ACCEPTED CANDIDATE CHANGED
 ```
 
-Nếu user explicit accept delta mới, record original accepted state + delta + actual merge state và targeted-verify theo impact khi cần.
+If the user explicitly accepts the new delta, record the original accepted state, the delta, and the actual merge state, then run impact-based verification when needed.
 
-## 3. Resolve pre-merge ship gate
+## 3. Resolve the pre-merge ship gate
 
-Không có một universal command list cho mọi project.
+There is no universal command list for every project.
 
-Resolve theo thứ tự:
+Resolve in this order:
 
-1. project instructions / project pack;
-2. repository-specific ship/release skill;
+1. project/repository instructions;
+2. repository-specific ship/release workflow;
 3. required CI/check configuration;
-4. build/test/lint/type/security commands canonical của repository nếu chưa có orchestrator riêng.
+4. canonical build/test/lint/type/security commands when no higher-level orchestrator exists.
 
-Không copy command từ project A sang project B.
+Do not copy release commands from another project.
 
-Ship gate phải gắn với candidate đang merge khi project policy yêu cầu exact-state evidence.
+Signals such as `mergeable=true`, visual PASS, browser smoke PASS, or "CI will run after merge" do not replace a mandatory ship gate.
 
-Các tín hiệu sau không tự thay ship gate:
-
-- `mergeable=true`;
-- visual review PASS;
-- browser smoke PASS;
-- “CI sẽ chạy sau merge”.
-
-Nếu mandatory gate fail:
+If a mandatory gate fails:
 
 ```text
 MERGE BLOCKED — SHIP GATE RED
 ```
 
-Nếu mandatory gate không thể verify:
+If it cannot be verified:
 
 ```text
 MERGE BLOCKED — SHIP GATE NOT VERIFIED
 ```
 
-trừ khi user/project authority explicit chấp nhận proceed với known missing gate. Khi override, report `OVERRIDDEN / NOT VERIFIED`, không `PASS`.
+unless authorized project policy explicitly accepts proceeding with that known gap. Report such a gate as `OVERRIDDEN / NOT VERIFIED`, never PASS.
 
-## 4. Base drift và CI
+## 4. Base drift and CI
 
-Nếu target branch tiến lên:
+If the target branch advances:
 
-- inspect delta;
-- xác định overlap với candidate contract/scope;
-- irrelevant drift có thể tiếp tục;
-- relevant overlap/conflict cần targeted integration verify.
+- inspect the delta;
+- determine overlap with the accepted contract/scope;
+- continue through irrelevant drift when safe;
+- run targeted integration verification for relevant overlap/conflicts.
 
-Không resolve conflict/rebase rồi tự coi acceptance cũ cover code mới.
+Do not resolve a conflict/rebase and assume the old acceptance automatically covers the changed code.
 
-Required CI fail vì candidate → block trừ explicit accepted override phù hợp policy.
-
-Infrastructure/historical noise phải được phân biệt product failure.
+Required CI failures caused by the candidate block the merge unless an explicit policy-appropriate override exists. Distinguish infrastructure/historical noise from product failure.
 
 ## 5. Dependency-aware merge
 
-Multi-repo/PR merge theo dependency order.
-
-Ví dụ generic:
+Merge multi-repo/PR dependencies in dependency order.
 
 ```text
 provider/API dependency
@@ -116,31 +103,31 @@ provider/API dependency
 → consumer
 ```
 
-Ghi:
+Record:
 
 - PR/candidate;
-- accepted delta nếu có;
+- accepted deltas;
 - ship-gate evidence/override;
 - merge method;
 - merge/target SHA.
 
-Platform-generated squash/merge commit không tự yêu cầu replay toàn UAT nếu content accepted và không có conflict-resolution behavior change.
+A platform-generated squash/merge commit does not require replaying every historical check if accepted content is preserved and conflict resolution did not change behavior.
 
 ## 6. Post-merge integrity
 
-Lightweight check đủ chứng minh:
+Run a lightweight check sufficient to show that:
 
-- target chứa intended change;
-- merge không rơi file/commit quan trọng;
-- conflict resolution không âm thầm đổi behavior.
+- target contains the intended change;
+- important files/commits were not lost;
+- conflict resolution did not silently alter behavior.
 
-Post-merge CI/deploy có phải synchronous closure gate hay operational signal phụ thuộc project policy.
+Whether post-merge CI/deploy is a synchronous closure gate or an operational signal depends on project policy.
 
-Nếu project không định nghĩa phải chờ post-merge pipeline terminal state, không tự poll vô hạn chỉ để đóng workstream. Nếu có failure cụ thể, mở targeted recovery scope.
+Do not poll indefinitely when the project does not require waiting for a terminal post-merge pipeline state. If a concrete failure appears, open a targeted recovery scope.
 
 ## 7. Cleanup classification
 
-Sau merge/integrity, classify:
+After merge/integrity, classify remaining material:
 
 ```text
 A. TRANSIENT → delete when safe
@@ -150,71 +137,57 @@ D. FINAL AUDIT / SIGN-OFF EVIDENCE → keep
 E. UNKNOWN / OWNERSHIP UNCERTAIN → keep and report
 ```
 
-Không dùng broad `git clean -fdx`, `git reset --hard`, `rm -rf` thay classification.
+Do not substitute broad destructive commands such as `git clean -fdx`, `git reset --hard`, or blind recursive deletion for classification.
 
-Untracked không đồng nghĩa rác.
+Untracked does not mean disposable.
 
-## 8. Transient residue
+Typical transient candidates include temporary screenshots/diffs/HAR/traces/videos, generated reports/ZIPs, debug dumps/logs, session-only helpers, and untracked generated build/test output.
 
-Candidate delete khi ownership rõ và workstream không còn cần:
+Promote reusable helpers into owned infrastructure; delete session-specific scratch when safe.
 
-- temp screenshots/diffs/HAR/trace/video;
-- generated local report/ZIP;
-- debug response dump/log;
-- one-off helper không có giá trị reusable;
-- generated test/build output không tracked.
+## 8. Evidence, worktrees, processes, and branches
 
-`promote-or-delete` helper reusable thay vì giữ scratch vô chủ.
+Use `evidence-transport` for reviewer-accessible artifacts and retain final audit metadata that matters. Do not create a release/tag merely to archive verification evidence.
 
-## 9. Evidence cleanup
+Before removing a worktree:
 
-Dùng installed `evidence-transport` skill.
+- verify there is no unique/uncommitted user work;
+- verify intended commits are reachable from target;
+- stop processes owned by the workstream;
+- use the normal worktree removal workflow.
 
-Giữ final review/audit metadata cần thiết; transient binary có thể expire nếu reproducible.
+Do not kill shared infrastructure.
 
-Không tạo Release/tag chỉ để archive verification evidence.
+Delete a feature branch only after merge, when it has no unique commits/worktree, and repository convention permits deletion.
 
-## 10. Worktree/process/branch cleanup
+## 9. Durable knowledge/documentation
 
-Trước remove worktree:
+After finalization, persist durable information through the documentation/knowledge mechanism allowed by the current project, if one exists.
 
-- verify không có unique/uncommitted user work;
-- verify intended commits reachable từ target;
-- stop process riêng của workstream;
-- dùng normal worktree removal workflow.
+Persist only information with cross-session value, such as:
 
-Không kill shared infrastructure.
+- final review/provenance worth retaining;
+- newly accepted product/business decisions;
+- reusable workflow lessons;
+- changed project-specific rules.
 
-Feature branch chỉ xóa khi merge xong, không có unique commit/worktree và repository convention cho phép.
+Do not convert a merge event or live CI status into a business rule. Operational status should normally be queried live unless historical evidence is required.
 
-## 11. Knowledge sync
+## 10. Anti-loop stop rule
 
-Sau finalize, persist durable knowledge qua documentation/knowledge workflow được current project cho phép, nếu có.
+Once status is `COMPLETE / MERGED`, do not start another general review merely because more checking is theoretically possible.
 
-Chỉ sync những gì có giá trị xuyên phiên:
-
-- relevant final review/provenance nếu đáng lưu;
-- accepted product/business decision mới;
-- reusable workflow lesson;
-- project-specific rule thay đổi.
-
-Không biến merge fact/live CI state thành business rule. Operational status có thể truy vấn live trừ khi cần historical evidence.
-
-## 12. Anti-loop stop rule
-
-Khi `COMPLETE / MERGED`, không tự mở general review mới chỉ vì còn khả năng kiểm tra thêm.
-
-Reopen khi có material trigger:
+Reopen only for a material trigger such as:
 
 - reproducible regression;
-- requirement/decision mới;
-- candidate/integration change ảnh hưởng acceptance;
-- failed required gate/delivery signal cụ thể;
-- evidence P0/P1 hoặc acceptance-affecting issue.
+- new requirement/decision;
+- candidate/integration change affecting acceptance;
+- concrete required-gate or delivery failure;
+- P0/P1 or another acceptance-affecting finding.
 
-Không reopen chỉ vì speculative risk, optional refactor, P3 polish hoặc test improvement không chứng minh defect hiện tại.
+Do not reopen for speculative risk, optional refactoring, low-value polish, or a test improvement that does not demonstrate a current defect.
 
-## 13. Final report
+## 11. Final report
 
 ```text
 CANDIDATE
@@ -245,15 +218,13 @@ Unknown kept:
 Reusable infra/tests kept:
 Worktrees/branches/processes:
 
-KNOWLEDGE SYNC
+KNOWLEDGE / DOCUMENTATION
 Files changed:
-Knowledge destination/state:
+Destination/state:
 
 FINAL STATUS:
 COMPLETE / MERGED | BLOCKED
 ```
-
-Nguyên tắc:
 
 ```text
 Resolve the project's actual ship policy.

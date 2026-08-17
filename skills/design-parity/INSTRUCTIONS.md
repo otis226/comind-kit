@@ -1,27 +1,29 @@
 # design-parity
 
-## Mục đích
+## Purpose
 
-Dùng khi một **exact design/reference đã được xác định là acceptance target** và implementation cần chứng minh fidelity.
+Use this workflow when an **exact accepted design/reference is an acceptance target** and the implementation must demonstrate fidelity with evidence.
 
-Nếu task không có exact design acceptance, không dùng skill này làm fake gate; dùng `skills/ui-design-authority.md` + coherence/design-quality review.
+If there is no exact-design acceptance requirement, do not create a fake parity gate. Use `ui-design-authority` plus coherence/design-quality review instead.
 
-`ui-review.md` giúp tìm gap; skill này quy định evidence để kết luận implementation đã đạt exact-reference scope hay chưa.
+`ui-review` helps identify gaps; this workflow defines the evidence needed to conclude whether an implementation satisfies exact-reference scope.
 
-## 1. Source priority
+## 1. Authority boundary
 
-Business/security/source priority vẫn theo `AGENTS.md` và project pack.
+Business, security, and operational source priority still come from the current project.
 
-Exact design là visual/interaction authority cho đúng surface/state, không tự động là business truth. Prototype-only data/state/route không được copy thành production contract.
+An exact design is visual/interaction authority only for the proven surface/state. Prototype-only data, routes, lifecycle, and fake state are not production contracts.
 
-Nếu exact reference mâu thuẫn invariant mới hơn, production giữ invariant và document `intentional business-safe delta`.
+If an accepted reference conflicts with a newer business or security invariant, preserve the invariant and document an `intentional business-safe delta`.
 
-## 2. Hai pass khi structural change lớn
+## 2. Two-pass conversion for major structural changes
 
 ### Pass A — Structural / visual port
 
+Verify:
+
 - hierarchy;
-- copy/label;
+- copy/labels;
 - grouping;
 - proportion;
 - spacing rhythm;
@@ -30,18 +32,20 @@ Nếu exact reference mâu thuẫn invariant mới hơn, production giữ invari
 
 ### Pass B — Production rewire
 
-- real API/state;
+Reconnect:
+
+- real APIs/state;
 - permission/domain gates;
-- loading/error/empty;
-- audit/integration capability;
+- loading/error/empty states;
+- audit/integration behavior;
 - accessibility;
-- production behavior.
+- production interaction.
 
-Sau rewire phải visual-verify lại vì real data có thể làm layout drift.
+Re-run visual verification after the rewire because real data can change layout.
 
-## 3. Acceptance gates
+## 3. Independent acceptance concerns
 
-Design conversion có 5 concern độc lập:
+Treat these as separate concerns:
 
 1. Visual.
 2. Structure / semantics.
@@ -49,7 +53,7 @@ Design conversion có 5 concern độc lập:
 4. Business contract.
 5. Regression.
 
-Không concern nào thay thế concern khác.
+A PASS in one concern does not replace another.
 
 ## 4. Visual gate
 
@@ -60,44 +64,44 @@ Visual
    └─ requires Comparable State
 ```
 
-### 4.1 Structural Visual
+### Structural Visual
 
-Đánh giá composition/hierarchy độc lập literal values:
+Judge composition and hierarchy independently of literal values:
 
 - component/state variant;
-- information hierarchy/order;
+- information order;
 - row/column composition;
 - proportion;
 - spacing/alignment;
 - wrapping/truncation;
 - control placement;
 - expanded/collapsed geometry;
-- responsive/crop geometry của surface trong scope.
+- responsive/crop geometry within scope.
 
-Literal data khác không biến structural defect thành dataset noise.
+Literal data differences do not excuse structural defects.
 
-### 4.2 Comparable State
+### Comparable State
 
-Pixel comparison chỉ actionable khi:
+Pixel comparison is actionable only when the candidate and reference are meaningfully comparable:
 
-- cùng business/component state;
-- cùng role/tab/expanded condition;
-- cùng viewport;
-- cùng focused surface/crop;
-- data shape/cardinality đủ tương đương;
-- intentional deltas đã predeclare.
+- same business/component state;
+- same role/tab/expanded condition;
+- same viewport;
+- same focused surface/crop;
+- sufficiently comparable data shape/cardinality;
+- intentional deltas declared in advance.
 
-Nếu chưa comparable:
+If state is not comparable:
 
 ```text
-Structural Visual = vẫn PASS/FAIL/BLOCKED
+Structural Visual = PASS/FAIL/BLOCKED as usual
 Pixel Visual      = BLOCKED
 Raw pixel diff    = diagnostic only
 ```
 
-### 4.3 Pixel Visual
+### Pixel Visual
 
-Khi comparable:
+When comparable:
 
 ```text
 REFERENCE screenshot
@@ -107,13 +111,11 @@ PRODUCTION screenshot
 → PASS / FAIL
 ```
 
-Không dùng full-page pixel ratio như absolute truth. Ưu tiên focused surface và stable state.
+Prefer stable focused surfaces over whole-page pixel ratios. Thresholds must be calibrated from known-good comparable evidence; a fixed percentage is not universal truth.
 
-Threshold phải calibrate từ known-good comparable fixture/runtime; một con số như 3% không phải universal truth.
+When structural parity passes but residual pixel mismatch remains, use `pixel-parity-calibration` before changing product code or thresholds.
 
-Nếu residual pixel mismatch còn sau Structural PASS, dùng `skills/pixel-parity-calibration.md` để phân loại product defect, intentional delta, fixture/data, clock/state và capture noise trước khi sửa thêm product code hoặc đổi threshold.
-
-### 4.4 Verdict composition
+### Verdict composition
 
 ```text
 Structural FAIL                  → Visual FAIL
@@ -123,98 +125,80 @@ Structural PASS + Pixel PASS    → Visual PASS
 Structural BLOCKED              → Visual BLOCKED
 ```
 
-### 4.5 Capture normalization
+Normalize viewport, fonts, animation, time/date, scroll/expanded state, and focus when practical. Never hide product elements merely to reduce a diff.
 
-Ổn định khi có thể:
+## 5. Structure and semantics
 
-- viewport;
-- fonts;
-- motion/animation;
-- deterministic time/date;
-- scroll/expanded state;
-- focus state.
+Use semantic evidence appropriate to the surface: role/name assertions, ARIA snapshots, DOM contracts, or equivalent.
 
-Không hide product element chỉ để giảm diff.
+A visually similar button/input/heading with incorrect semantics still fails.
 
-## 5. Structure / semantics
+Relevant page, API, or console failures can invalidate evidence and should produce FAIL/BLOCKED until resolved or proven out of scope.
 
-Dùng semantic evidence phù hợp: role/name assertions, ARIA snapshot, DOM contract hoặc equivalent.
+## 6. Interaction and state
 
-Visual giống nhưng button/input/heading semantics sai vẫn FAIL.
-
-Runtime/API/console error làm evidence không đáng tin phải FAIL/BLOCKED cho tới khi được xử lý hoặc chứng minh ngoài scope.
-
-## 6. Interaction / state
-
-Browser thật cho state quan trọng:
+Exercise important states in a real browser when relevant:
 
 - click/open/close;
 - select/expand;
 - enabled/disabled;
 - loading/error/empty;
 - form validation;
-- state transition;
-- keyboard/focus khi relevant.
+- state transitions;
+- keyboard/focus behavior.
 
 ## 7. Business contract
 
-Invariant quan trọng phải có targeted executable assertion/scenario khi practical, không chỉ ghi trong prompt.
+Material invariants should have targeted executable assertions or scenarios when practical, not just prompt text.
 
-Nếu prototype khác invariant, invariant thắng và delta được document.
+If a prototype differs from a confirmed invariant, the invariant wins and the delta is documented.
 
-## 8. Regression
+## 8. Regression and candidate identity
 
-Chạy targeted test/typecheck/lint/build/E2E phù hợp project/scope. Test pass không thay Visual; Visual pass không thay business/regression.
+Run project-appropriate targeted tests, type checks, lint, builds, or E2E. Test PASS does not replace visual evidence; visual PASS does not replace business/regression evidence.
 
-Nếu candidate đã từng PASS runtime/UAT rồi tiếp tục thay đổi, dùng `skills/runtime-regression.md` để quyết định evidence nào còn carry-forward được và journey nào phải rerun.
-
-## 9. Done rule
-
-Không report `aligned`, `matches design`, `PARITY READY` hoặc tương đương khi còn:
-
-- required surface chưa verify;
-- Structural Visual FAIL/BLOCKED;
-- required Pixel Visual FAIL/BLOCKED;
-- semantic/interaction/business/regression FAIL/BLOCKED;
-- relevant runtime error chưa giải thích;
-- intentional delta chưa document;
-- evidence không reviewer-accessible khi workflow yêu cầu review độc lập.
-
-Environment/data không cho chạy gate thì report `BLOCKED`/`NOT VERIFIED`, không đổi thành PASS.
-
-`NOT_APPLICABLE` chỉ khi concern thật sự ngoài acceptance scope.
-
-## 10. Exact-candidate evidence
-
-Evidence chỉ chứng minh candidate/product state mà nó thực sự chạy.
+Evidence proves only the candidate state it actually exercised:
 
 ```text
 candidate A → PARITY READY
 product changes → candidate B
-→ evidence A không tự động cover B
+→ evidence A does not automatically cover B
 ```
 
-Nếu B có change có thể ảnh hưởng acceptance scope, rerun affected surfaces/concerns trước khi claim B ready.
+Use `runtime-regression` to determine what can carry forward and what must be rerun. Dirty/uncommitted work can be diagnostic evidence but must not be attributed to a different committed SHA.
 
-Không cần replay mọi historical check nếu impact tách biệt và có thể chứng minh; dùng impact-based rerun theo `skills/runtime-regression.md`.
+## 9. Done rule
 
-Dirty/uncommitted WIP có thể dùng để diagnose nhưng không được gán PASS cho một committed SHA khác.
+Do not claim `aligned`, `matches design`, `PARITY READY`, or equivalent while any required concern is FAIL/BLOCKED/NOT VERIFIED, including:
 
-## 11. Completion và sign-off
+- required surfaces;
+- Structural Visual;
+- required Pixel Visual;
+- semantics;
+- interaction;
+- business contract;
+- regression;
+- unexplained relevant runtime errors;
+- undocumented intentional deltas;
+- reviewer-inaccessible evidence when independent review is required.
+
+Environment/data limitations should be reported as `BLOCKED` or `NOT VERIFIED`, not converted to PASS.
+
+Use `N/A` only when a concern is genuinely outside acceptance scope.
+
+## 10. Completion and evidence manifest
 
 ```text
 PARITY READY
-= executable evidence chứng minh exact-reference acceptance scope
+= executable evidence covers the exact-reference acceptance scope
 
 PRODUCT COMPLETE
-= PARITY READY + user/PO acceptance trên final product state theo project workflow
+= PARITY READY + required human/product acceptance on the final product state
 ```
 
-AI parity review không tự thay user/product acceptance.
+AI parity review does not replace human/product acceptance.
 
-## 12. Evidence manifest
-
-Tối thiểu:
+Minimum manifest:
 
 ```text
 Product candidate: <branch/SHA>
@@ -232,41 +216,34 @@ Intentional deltas:
 Evidence:
 ```
 
-Required surface có Pixel BLOCKED phải nói rõ comparable fixture/state nào còn thiếu, không chỉ ghi `data differs`.
+If Pixel Visual is BLOCKED, state exactly what comparable fixture/state is missing rather than saying only `data differs`.
 
-## 13. Evidence và helper lifecycle
+## 11. Evidence and helper lifecycle
 
-Binary evidence không cần sống vĩnh viễn trong product history. Dùng `skills/evidence-transport.md` để chọn living PR/review evidence hoặc temporary artifact mechanism.
-
-Nguyên tắc:
+Use `evidence-transport` for screenshots, diffs, traces, and reports that reviewers need to access.
 
 ```text
 Evidence is disposable; reproducibility is durable.
-Product repo should retain capabilities, not debugging sessions.
+Product repositories should retain capabilities, not debugging sessions.
 ```
 
-One-off capture/debug helper nên ở temporary/gitignored location khi practical. Trước cleanup áp dụng `promote-or-delete`:
+Promote reusable helpers into owned verification infrastructure; delete session-specific helpers when they are no longer needed. Use `finalize-workstream` for cleanup/finalization.
 
-- capability generic/reusable → promote vào harness/config/test có ownership rõ;
-- session-specific helper → delete sau khi không còn cần.
+## 12. Fixture and threshold discipline
 
-Cleanup/finalization theo `skills/finalize-workstream.md`.
+Parity fixtures are verification infrastructure, not random UAT residue.
 
-## 14. Fixture và threshold discipline
+- prefer deterministic fixtures for important states;
+- do not damage a valuable fixture merely to manufacture a screenshot;
+- missing required scenario → BLOCKED, or seed at the correct layer when allowed;
+- do not raise thresholds merely to turn red into green;
+- do not crop/mask a defect without a documented scope reason;
+- do not call geometry/hierarchy defects data noise because literal content differs.
 
-Parity fixture là verification infrastructure, không phải random UAT residue.
+If threshold, crop, config, or fixture changes, recapture/re-evaluate affected evidence.
 
-- ưu tiên deterministic fixture cho state quan trọng;
-- không phá fixture có giá trị chỉ để manufacture screenshot;
-- required scenario thiếu fixture → `BLOCKED` hoặc seed fixture ở đúng layer khi scope cho phép;
-- không tăng threshold chỉ để green;
-- không crop/mask defect mà không có documented scope reason;
-- không gọi geometry/hierarchy defect là data noise chỉ vì literal content khác.
+## 13. Orchestration
 
-Nếu config/threshold/crop thay đổi, recapture/re-evaluate evidence bị ảnh hưởng.
+Write slices may be parallelized by ownership, but the parity verdict must run against the **combined candidate** owned by final integration.
 
-## 15. Orchestration
-
-Write slices có thể parallelize theo ownership, nhưng parity verdict phải chạy trên **combined candidate** do Final Integration owner chịu trách nhiệm.
-
-Không cộng PASS cục bộ của từng subagent để suy ra toàn feature PASS.
+Do not aggregate independent subagent PASS results into a feature-level PASS without combined verification.
