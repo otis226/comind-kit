@@ -1,0 +1,16 @@
+{
+  "name": "otis-tools",
+  "owner": {
+    "name": "Otis"
+  },
+  "plugins": [
+    {
+      "name": "comind-kit",
+      "source": {
+        "source": "github",
+        "repo": "otis226/comind-kit"
+      },
+      "description": "Reusable engineering, product UI, review, and delivery skills plus Claude Code specialist agents."
+    }
+  ]
+}
