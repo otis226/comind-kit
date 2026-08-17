@@ -4,7 +4,7 @@ A shareable package of reusable engineering, product UI, review, and delivery wo
 
 This repository contains only portable skills and runtime adapters. It does not require access to private project knowledge, project packs, decisions, or a private CoMind repository.
 
-## Install Agent Skills
+## Option 1 — Install Agent Skills across runtimes
 
 Claude Code + Cursor:
 
@@ -18,23 +18,28 @@ Claude Code + Cursor + Codex:
 npx -y skills@1.5.22 add otis226/comind-kit --global --skill '*' --agent claude-code --agent cursor --agent codex --yes
 ```
 
-If this repository is private, authenticate Git/GitHub on the machine first.
+This installs the portable Agent Skills for the selected runtimes.
 
-## Claude Code: install skills + specialist agents as a plugin
+## Option 2 — Claude Code plugin with specialist agents
 
-Add the marketplace:
+For Claude Code, the repository is also a plugin marketplace. Run these commands **inside Claude Code**:
 
-```bash
-claude plugin marketplace add otis226/comind-kit
+```text
+/plugin marketplace add otis226/comind-kit
+/plugin install comind-kit@otis-tools
 ```
 
-Install the plugin:
+The plugin loads the same skills plus specialist subagents:
 
-```bash
-claude plugin install comind-kit@otis-tools
-```
+- `senior-dev`
+- `ui-design-architect`
+- `ui-visual-reviewer`
+- `ui-runtime-reviewer`
+- `product-ui-critic`
 
-The plugin adds the same canonical skills plus Claude Code specialist agents such as `senior-dev`, `ui-design-architect`, `ui-visual-reviewer`, `ui-runtime-reviewer`, and `product-ui-critic`.
+Plugin skills are namespaced by Claude Code under the plugin name. The custom agents appear through Claude Code's agent system.
+
+The plugin intentionally omits a fixed semantic version so Git-hosted updates can resolve by commit instead of remaining pinned to a stale `0.1.0`.
 
 ## Included skills
 
