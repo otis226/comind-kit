@@ -4,25 +4,47 @@ A shareable package of reusable engineering, product UI, review, and delivery wo
 
 This repository contains only portable skills and runtime adapters. It does not require access to private project knowledge, project packs, decisions, or a private CoMind repository.
 
-## Option 1 — Install Agent Skills across runtimes
+## Install
 
-Claude Code + Cursor:
+Use the normal `skills` CLI flow:
+
+```bash
+npx -y skills@1.5.22 add otis226/comind-kit
+```
+
+This intentionally keeps the CLI defaults for scope, skill selection, target agents, and installation method instead of forcing Claude Code, Cursor, Codex, global scope, or every skill.
+
+## Optional targeting
+
+Use these only when you specifically want to target a runtime or skip the normal choices.
+
+Claude Code only:
+
+```bash
+npx -y skills@1.5.22 add otis226/comind-kit --agent claude-code
+```
+
+Cursor only:
+
+```bash
+npx -y skills@1.5.22 add otis226/comind-kit --agent cursor
+```
+
+Claude Code + Cursor, all skills, global install:
 
 ```bash
 npx -y skills@1.5.22 add otis226/comind-kit --global --skill '*' --agent claude-code --agent cursor --yes
 ```
 
-Claude Code + Cursor + Codex:
+Claude Code + Cursor + Codex, all skills, global install:
 
 ```bash
 npx -y skills@1.5.22 add otis226/comind-kit --global --skill '*' --agent claude-code --agent cursor --agent codex --yes
 ```
 
-This installs the portable Agent Skills for the selected runtimes.
+## Optional Claude Code plugin
 
-## Option 2 — Claude Code plugin with specialist agents
-
-For Claude Code, the repository is also a plugin marketplace. Run these commands inside Claude Code:
+If you use Claude Code and also want the specialist subagents, this repository can be installed as a plugin marketplace. Run inside Claude Code:
 
 ```text
 /plugin marketplace add otis226/comind-kit
