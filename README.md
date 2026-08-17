@@ -22,24 +22,18 @@ This installs the portable Agent Skills for the selected runtimes.
 
 ## Option 2 — Claude Code plugin with specialist agents
 
-For Claude Code, the repository is also a plugin marketplace. Run these commands **inside Claude Code**:
+For Claude Code, the repository is also a plugin marketplace. Run these commands inside Claude Code:
 
 ```text
 /plugin marketplace add otis226/comind-kit
 /plugin install comind-kit@otis-tools
 ```
 
-The plugin loads the same skills plus specialist subagents:
-
-- `senior-dev`
-- `ui-design-architect`
-- `ui-visual-reviewer`
-- `ui-runtime-reviewer`
-- `product-ui-critic`
+The plugin loads the same skills plus specialist subagents: `senior-dev`, `ui-design-architect`, `ui-visual-reviewer`, `ui-runtime-reviewer`, and `product-ui-critic`.
 
 Plugin skills are namespaced by Claude Code under the plugin name. The custom agents appear through Claude Code's agent system.
 
-The plugin intentionally omits a fixed semantic version so Git-hosted updates can resolve by commit instead of remaining pinned to a stale `0.1.0`.
+The plugin intentionally omits a fixed semantic version so Git-hosted updates can resolve by commit instead of remaining pinned to a stale version string.
 
 ## Included skills
 
