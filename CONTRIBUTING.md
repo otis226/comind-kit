@@ -44,13 +44,13 @@ If the change affects public behavior, update `README.md` and `CHANGELOG.md` whe
 
 ## Validation
 
-Run:
+Run the static validator locally:
 
 ```bash
 node scripts/validate-public.mjs
 ```
 
-The same validation runs in GitHub Actions.
+GitHub Actions runs the same validator and then performs a real installation smoke test against the current checkout with the pinned `skills@1.5.22` CLI. The smoke test installs all public skills into a temporary Claude Code project and verifies that every expected `SKILL.md` is discoverable after installation.
 
 ## Breaking changes
 
