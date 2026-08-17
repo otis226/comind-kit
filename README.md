@@ -2,14 +2,14 @@
 
 > **Reusable Agent Skills and specialist agents for building, reviewing, and shipping software with AI coding tools.**
 
+![Public](https://img.shields.io/badge/repository-public-0f766e?style=flat-square)
 ![Agent Skills](https://img.shields.io/badge/Agent%20Skills-portable-4f46e5?style=flat-square)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin%20%2B%20agents-d97706?style=flat-square)
-![Cursor](https://img.shields.io/badge/Cursor-compatible-111827?style=flat-square)
-![Codex](https://img.shields.io/badge/Codex-compatible-059669?style=flat-square)
+![Project Neutral](https://img.shields.io/badge/scope-project--neutral-111827?style=flat-square)
 
-CoMind Kit packages a practical software-delivery workflow into portable skills that can be installed into supported AI coding runtimes.
+CoMind Kit packages a practical software-delivery workflow into portable Agent Skills that can be installed into supported AI coding runtimes.
 
-It is intentionally **project-neutral**: no private project knowledge, no private repository routing, and no dependency on the private CoMind repository.
+It is **project-neutral by design**: the toolkit provides reusable workflows, while project-specific truth stays in the repository you are actually working on.
 
 ---
 
@@ -83,6 +83,18 @@ flowchart LR
 | `pixel-parity-calibration` | Pixel mismatch remains after structural parity is close | Separates real product defects from fixture/clock/render noise |
 | `runtime-regression` | A candidate changed after a previous runtime PASS | Decides what evidence still carries forward and what must be rerun |
 | `evidence-transport` | Reviewers need screenshots, traces, reports, or diffs | Moves evidence to reviewable locations without polluting release history |
+
+---
+
+## Runtime support
+
+| Runtime | Skills | Specialist agents |
+|---|---:|---:|
+| **Claude Code** | Yes | Optional plugin |
+| **Cursor** | Yes | Runtime-native handling |
+| **Codex** | Yes | Runtime-native handling |
+
+The portable skills are the canonical workflows. Runtime-specific agents are thin adapters, not separate sources of truth.
 
 ---
 
@@ -200,8 +212,6 @@ If you use Claude Code and want the specialist subagents in addition to the skil
 
 The plugin loads the same canonical skills plus the five specialist agents listed above.
 
-The plugin intentionally omits a fixed semantic version so Git-hosted updates can resolve by commit instead of staying pinned to a stale version string.
-
 ---
 
 ## How humans and AI should read this repo
@@ -219,17 +229,13 @@ agents/*         → Claude Code specialist adapters
 
 ---
 
-## Boundary
+## Trust model
 
-CoMind Kit intentionally does **not** include:
+CoMind Kit provides workflow instructions, not project truth.
 
-- private project knowledge;
-- business rules from a specific project;
-- private decisions or references;
-- private repository routing;
-- private CoMind context/sync capabilities.
-
-Each installed agent must resolve project-specific truth from the repository it is currently working in.
+- Business rules, design decisions, API contracts, permissions, and release policy must come from the current project.
+- A skill should not invent project-specific facts just because a reusable workflow mentions that concern.
+- Review the repository before installing it into a sensitive environment, just as you would review any tool that can influence a coding agent.
 
 ---
 
@@ -242,5 +248,3 @@ comind-kit/
 ├── agents/                 # Claude Code specialist adapters
 └── .claude-plugin/         # plugin + marketplace metadata
 ```
-
-Built from a sanitized allowlisted distribution pipeline; it is safe to use without access to the private CoMind repository.
