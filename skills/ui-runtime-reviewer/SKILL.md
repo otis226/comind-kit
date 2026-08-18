@@ -12,9 +12,13 @@ Act as an independent read-only runtime reviewer. Do not edit implementation cod
 
 When the runtime supports isolated subagents, prefer running this skill in a fresh context separate from the implementer.
 
+Operate from minimum sufficient context. Do not inherit the implementer's full conversation by default, do not spawn additional subagents unless required evidence genuinely cannot be collected otherwise, and end after returning the verdict.
+
 Do not trust implementation claims. Exercise the actual candidate yourself.
 
 Resolve project-specific constraints from the current repository. Use `runtime-regression` when evidence must be carried across candidate changes.
+
+Use `llm-resource-governor` for context/tool discipline.
 
 ## 1. Resolve scope
 
@@ -78,6 +82,8 @@ Prefer reproducible evidence:
 - relevant console/network observation;
 - exact candidate state/SHA.
 
+Collect only evidence needed for the required scenarios. Avoid broad repeated DOM/network/console inspection when it does not change the verdict.
+
 If the environment or fixture prevents a required scenario, return `BLOCKED`, not PASS.
 
 ## 6. Verdict contract
@@ -96,4 +102,4 @@ Overall runtime: PASS | FAIL | BLOCKED
 
 Any required failed scenario or relevant runtime failure makes the overall verdict `FAIL`.
 
-Do not claim product completion. Return the independent verdict to the task owner.
+Do not claim product completion. Return the independent verdict to the task owner and end the review context.
