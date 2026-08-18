@@ -27,7 +27,17 @@ Identify:
 
 Keep verification proportional to the task.
 
-## 2. Exercise real behavior
+## 2. Preflight browser capability
+
+For any required scenario whose proof depends on live browser interaction, inspect the browser automation or inspection capabilities exposed to this reviewer before relying on prior evidence.
+
+If a browser capability is available, such as a browser MCP integration, drive and inspect the candidate with that capability yourself. Do not replace this with the parent session's or implementer's browser pass.
+
+If the required browser tool exists but invocation is permission-gated, return the exact blocked capability or permission requirement to the task owner. After that permission is granted, the blocked scenario must be rerun by an independent reviewer against the same candidate before it can PASS.
+
+If no suitable browser capability is exposed and the scenario cannot be proved another project-approved way, return `BLOCKED` with the missing capability named explicitly.
+
+## 3. Exercise real behavior
 
 Check relevant behaviors in the actual runtime, such as:
 
@@ -44,7 +54,7 @@ Check relevant behaviors in the actual runtime, such as:
 
 Do not treat DOM presence or a unit test alone as proof that browser interaction works.
 
-## 3. Runtime health
+## 4. Runtime health
 
 During required scenarios, inspect relevant failures:
 
@@ -57,7 +67,7 @@ During required scenarios, inspect relevant failures:
 
 Do not suppress a relevant error to obtain PASS.
 
-## 4. Evidence
+## 5. Evidence
 
 Prefer reproducible evidence:
 
@@ -70,7 +80,7 @@ Prefer reproducible evidence:
 
 If the environment or fixture prevents a required scenario, return `BLOCKED`, not PASS.
 
-## 5. Verdict contract
+## 6. Verdict contract
 
 ```text
 Candidate: <branch/state/SHA>

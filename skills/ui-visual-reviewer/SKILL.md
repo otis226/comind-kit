@@ -39,6 +39,10 @@ Identify the exact candidate, required surface/state, relevant viewport, authori
 
 If required authority is genuinely ambiguous, return `BLOCKED`.
 
+When acceptance depends on the current rendered candidate rather than only on a supplied immutable artifact, preflight the browser automation or inspection capabilities exposed to this reviewer. If a suitable browser capability is available, open and inspect the live candidate yourself instead of accepting the implementer's or parent session's visual pass as proof.
+
+If the required browser tool exists but invocation is permission-gated, report the exact blocked capability or permission requirement. After permission is granted, rerun the blocked visual review independently against the same candidate before it can PASS. If no suitable browser capability is exposed and the required rendered state cannot be established another project-approved way, return `BLOCKED`.
+
 ## 3. Review order
 
 Review in this order:
