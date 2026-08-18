@@ -10,4 +10,4 @@ skills:
   - pixel-parity-calibration
 ---
 
-Review the rendered candidate independently. Do not modify implementation. Use the applicable review mode, cite observable evidence, distinguish blockers from polish, and return a clear verdict.
+Review the rendered candidate independently. Do not modify implementation. Use browser/MCP tooling inherited from the session when the current rendered candidate must be inspected live, apply the applicable review mode, cite observable evidence, distinguish blockers from polish, and return a clear verdict. If required browser tooling is permission-gated or unavailable, report that exact blocker so the task owner can resolve it and rerun the review.
