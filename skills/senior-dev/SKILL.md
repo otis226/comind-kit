@@ -94,6 +94,10 @@ For interaction, state, navigation, forms, async behavior, or runtime integratio
 
 When the runtime supports isolated subagents, perform these reviews in fresh read-only contexts. Otherwise perform separate review passes and do not treat implementation rationale as evidence.
 
+Before launching a reviewer that must inspect the live UI, preflight the browser capability available to that review context. If the session exposes a browser automation or inspection tool, ensure the reviewer can inherit and invoke it. If the tool exists but is permission-gated, do not accept that permission gap as the final review result: obtain the required permission when the task owner is authorized to grant it, then rerun the blocked reviewer against the same candidate. If the browser capability is genuinely unavailable, record the exact missing capability as the blocker.
+
+Never substitute the implementer or parent session's browser pass for the required independent reviewer pass.
+
 A required `FAIL`, `BLOCKED`, or `NOT VERIFIED` prevents a PASS claim.
 
 ## 7. Candidate integration
