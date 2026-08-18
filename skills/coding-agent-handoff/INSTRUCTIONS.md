@@ -4,11 +4,12 @@
 
 Use this workflow when preparing a prompt or handoff for Claude Code, Cursor, Codex, or another coding harness to implement a reviewed task.
 
-It standardizes three things:
+It standardizes four things:
 
 1. resolve the correct project/source before coding;
 2. resolve design authority before user-visible UI implementation;
-3. use main-agent → vertical subagents → final integration only when the task benefits from decomposition.
+3. use main-agent → vertical subagents → final integration only when the task benefits from decomposition;
+4. keep model, context, browser/MCP, and concurrency cost proportional to the work.
 
 This is workflow policy, not a project-specific business rule.
 
@@ -16,9 +17,13 @@ This is workflow policy, not a project-specific business rule.
 PROJECT TRUTH BEFORE CODE
 DESIGN AUTHORITY BEFORE UI CODE
 OWNERSHIP BEFORE PARALLEL WRITES
+FAN-OUT IS EARNED, NOT DEFAULT
+MINIMUM SUFFICIENT SUBAGENT CONTEXT
 VERTICAL SUBAGENTS, NOT LAYER SUBAGENTS
 MAIN AGENT OWNS INTEGRATION
 ```
+
+Use `llm-resource-governor` whenever the handoff may spawn subagents, accumulate large context, use browser/MCP-heavy evidence, or run multiple expensive model contexts.
 
 ## 1. Resolve project and source
 
@@ -48,13 +53,7 @@ GREENFIELD
 
 ### REFERENCE_BACKED
 
-When an exact accepted design/reference is the acceptance target, resolve:
-
-- affected surfaces and states;
-- exact source/entrypoint for each surface;
-- imported style/source bundles when the entrypoint is only a wrapper;
-- corresponding production route/component;
-- provenance/ref/local state when relevant.
+When an exact accepted design/reference is the acceptance target, resolve affected surfaces/states, exact source/entrypoints, relevant imported source/style bundles, corresponding production routes/components, and provenance when needed.
 
 Do not hand off vague instructions such as "match the design" when the exact source can be resolved.
 
@@ -64,54 +63,71 @@ If several plausible references remain genuinely ambiguous after inspection, ret
 
 Do not invent a fake parity target when no exact accepted reference exists.
 
-Create or obtain a compact Design Manifest covering:
-
-- authority mode;
-- canonical inputs;
-- inherited or derived conventions;
-- new proposals;
-- allowed freedom;
-- do-not-deviate constraints;
-- review baseline.
+Create or obtain a compact Design Manifest covering authority mode, canonical inputs, inherited/derived conventions, new proposals, allowed freedom, do-not-deviate constraints, and review baseline.
 
 For meaningful PRODUCT_DERIVED or GREENFIELD work, or a substantial new SYSTEM_BACKED composition, prefer an independent read-only `ui-design-architect` pass when the runtime supports it.
 
 ## 3. Design is not business truth
 
-A design/reference governs visual and interaction intent only within its proven scope. Lifecycle, permissions, API contracts, security, and business invariants still come from the current project authority.
+A design/reference governs visual and interaction intent only within its proven scope. Lifecycle, permissions, API contracts, security, and business invariants still come from current project authority.
 
 Do not turn seed data, fake IDs, mock routing, or prototype-only states into production rules.
 
 ## 4. Main-agent ownership
 
-When subagents are available, one main agent remains accountable for the whole task:
-
-1. project/source resolution;
-2. design authority when UI is involved;
-3. risk and scope understanding;
-4. ownership/decomposition;
-5. fan-out decision;
-6. vertical-slice assignment;
-7. shared wiring/shared-file ownership;
-8. specialist reports;
-9. final integration;
-10. combined regression and final verification.
+When subagents are available, one main agent remains accountable for project/source resolution, design authority, risk/scope, ownership/decomposition, fan-out decisions, shared wiring, specialist reports, final integration, and combined verification.
 
 Do not spawn write-capable subagents until source, surface, and ownership are clear enough.
 
-## 5. When to fan out
+## 5. Fan-out gate
 
-Use parallel subagents when there are at least two slices that are meaningfully independent and can each perform:
+Do not spawn a subagent merely because the runtime supports subagents.
+
+Default policy:
+
+```text
+FAST
+→ main owner only
+
+STANDARD
+→ main owner + up to 2 concurrent specialists
+
+HIGH_RISK
+→ prefer parallel investigation over parallel mutation
+```
+
+Exceed the default only when additional concurrency clearly shortens the critical path or reduces a concrete risk.
+
+Use parallel write subagents only when there are at least two meaningfully independent vertical slices that can each perform:
 
 ```text
 inspect → plan → implement → targeted verification
 ```
 
-Parallelism should reduce elapsed work without creating shared-write conflicts or excessive context overhead.
-
 Small, linear, or tightly coupled tasks should stay with the main agent.
 
-## 6. Vertical slices, not technical layers
+## 6. Minimum sufficient context
+
+A fresh subagent should not inherit the main conversation by default.
+
+Pass a compact task packet:
+
+```text
+ROLE / SKILL
+GOAL
+CANDIDATE / SHA / WORKTREE
+EXACT SCOPE OR ROUTE
+RELEVANT AUTHORITY / ACCEPTANCE RULES
+OWNERSHIP OR READ-ONLY BOUNDARY
+REQUIRED CHECKS / SCENARIOS
+RETURN CONTRACT
+```
+
+Prefer exact paths, links, SHAs, issue/PR identifiers, and concise authority summaries over copied transcripts, old browser traces, or broad project dumps.
+
+When per-agent model selection exists, explicitly choose a cheaper capable tier for bounded specialists instead of silently inheriting the main owner's strongest model. Escalate only when the specialist task itself contains material ambiguity, high-risk reasoning, or repeated failure indicating the cheaper tier is insufficient.
+
+## 7. Vertical slices, not technical layers
 
 Good:
 
@@ -131,9 +147,7 @@ Agent C = Tests
 
 Do not let multiple writers mutate the same shared parent, API/state region, or styling surface without explicit isolation and ownership.
 
-## 7. Ownership map
-
-Before fan-out, produce a compact map:
+## 8. Ownership map
 
 ```text
 Slice A — <goal>
@@ -151,7 +165,7 @@ Main / Final Integration owns:
 - cross-slice regression
 ```
 
-## 8. Subagent return contract
+## 9. Subagent return contract
 
 ```text
 SLICE: <name>
@@ -173,42 +187,59 @@ Assumptions / blockers:
 - ... | NONE
 ```
 
-## 9. Final integration
+End the specialist after it returns this contract. Do not leave background/loop agents alive without a current responsibility.
 
-After fan-out:
+## 10. Final integration
 
 ```text
 collect reports
 → inspect combined diff/current tree
 → resolve shared wiring/conflicts
 → verify source/design-authority coverage
+→ reuse still-valid evidence from the unchanged candidate
 → run affected cross-slice regression
-→ run required visual/runtime/business verification
+→ run only required visual/runtime/business verification
 → fix integration defects
 → continue candidate/ship workflow
 ```
 
 Local slice PASS does not imply feature PASS.
 
-## 10. Risk-sensitive orchestration
+If the candidate changes, identify which evidence was invalidated and rerun only that evidence unless the impact is unclear.
 
-### FAST
+## 11. Browser and reviewer discipline
 
-Prefer a single agent. Parallelize investigation only when the benefit is obvious.
+Treat browser/MCP-heavy reviewers as short-lived evidence workers.
 
-### STANDARD
+Give them the exact candidate, route/state/fixture, required scenarios, runtime-health checks, relevant authority, and verdict contract. They should collect only scenario-relevant evidence, return a concise verdict, then end.
 
-Use a main orchestrator plus vertical subagents when ownership separates cleanly.
+Before launching an independent reviewer whose proof depends on the live UI, preflight that review context's browser capability. If the required browser tool is permission-gated, resolve the permission when authorized and rerun the blocked reviewer. Never substitute the implementer or parent session's browser pass for a required independent reviewer pass.
 
-### HIGH_RISK
+Route UI reviewers by the actual change:
 
-Prefer parallel investigation over parallel mutation. Security, permissions, destructive actions, lifecycle logic, and shared contracts need explicit owners.
+```text
+visual/composition/style changed
+→ visual review
 
-## 11. Resource governor
+interaction/state/navigation/form/async/runtime integration changed
+→ runtime review
 
-Do not run multiple heavy/E2E suites concurrently merely because several agents exist. Slices should run targeted checks; final integration runs the combined concerns that matter.
+both changed meaningfully
+→ both reviews
 
-## 12. Prompt author contract
+neither changed
+→ neither UI reviewer
+```
+
+Project-specific mandatory gates override this routing.
+
+## 12. Machine resource governor
+
+Do not run multiple heavy/E2E suites concurrently merely because several agents exist. Slices should run targeted checks; final integration runs combined concerns through the project's machine-resource scheduling policy when one exists.
+
+Machine CPU/RAM scheduling and LLM/context governance solve different problems; apply both when relevant.
+
+## 13. Prompt author contract
 
 Coding-agent prompts should be English unless the user explicitly requests another language.
 
@@ -219,7 +250,7 @@ GOAL
 CURRENT PRODUCT/BUSINESS GUARDRAILS
 PHASE 0 — PROJECT/SOURCE RESOLUTION
 UI DESIGN AUTHORITY
-ORCHESTRATION
+ORCHESTRATION / RESOURCE BUDGET
 IMPLEMENTATION SCOPE
 VERIFICATION / DONE CRITERIA
 DO NOT / GUARDRAILS
@@ -230,7 +261,10 @@ Do not micromanage implementation when the coding agent can inspect source, but 
 ```text
 The main agent coordinates the work.
 Resolve what is authoritative before generating new behavior or UI.
-Each subagent owns a complete vertical slice.
-Subagents report back; the main agent integrates.
+Fan-out is earned, not default.
+Each subagent gets minimum sufficient context and owns a complete vertical slice.
+Use cheaper capable specialist models when the runtime supports explicit selection.
+Subagents report back and end; the main agent integrates.
 Do not parallelize ownership conflicts.
+Do not keep browser-heavy reviewer contexts alive after their verdict.
 ```
