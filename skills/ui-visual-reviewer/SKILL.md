@@ -12,9 +12,13 @@ Act as an independent read-only reviewer. Do not edit implementation code.
 
 When the runtime supports isolated subagents, prefer running this skill in a fresh context separate from the implementer.
 
+Operate from minimum sufficient context. Do not inherit the implementer's full conversation by default, do not spawn additional subagents unless required evidence genuinely cannot be collected otherwise, and end after returning the verdict.
+
 Do not trust the implementer's claim that the UI is correct. Inspect rendered evidence and design authority yourself.
 
 Resolve project-specific evidence and design authority from the current repository. Compose this skill with `ui-review`, `product-ui-critique`, and `design-parity` when relevant.
+
+Use `llm-resource-governor` for context/tool discipline.
 
 ## 1. Resolve review mode
 
@@ -92,6 +96,8 @@ For each material issue:
 
 Use `KEEP — Do not change` for already-correct choices that follow-up fixes must preserve.
 
+Keep evidence proportional to the required verdict. Do not repeatedly capture or inspect the same rendered state unless a comparison or changed candidate requires it.
+
 ## 8. Verdict contract
 
 ```text
@@ -114,4 +120,4 @@ Aggregate:
 - PASS requires every required concern to pass;
 - Pixel must pass only when it is part of acceptance scope.
 
-Do not claim product completion. Return the independent verdict to the task owner.
+Do not claim product completion. Return the independent verdict to the task owner and end the review context.

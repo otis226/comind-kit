@@ -30,6 +30,7 @@ jobs:
             design-parity \
             evidence-transport \
             finalize-workstream \
+            llm-resource-governor \
             pixel-parity-calibration \
             product-ui-critique \
             runtime-regression \

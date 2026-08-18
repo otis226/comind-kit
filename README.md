@@ -32,7 +32,7 @@ That keeps the CLI defaults for scope, skill selection, target runtimes, and ins
 
 | Area | What it helps with | Main skills |
 |---|---|---|
-| 🧭 **Engineering delivery** | Understand the task, plan, implement, coordinate subagents, hand off | `senior-dev`, `coding-agent-handoff` |
+| 🧭 **Engineering delivery** | Understand the task, plan, implement, coordinate subagents, control orchestration cost, hand off | `senior-dev`, `coding-agent-handoff`, `llm-resource-governor` |
 | 🎨 **Product & UI** | Resolve design authority, critique UI, review visual quality | `ui-design-authority`, `ui-design-architect`, `product-ui-critique`, `ui-review`, `ui-visual-reviewer` |
 | 🧪 **Verification** | Runtime checks, regression decisions, design parity, evidence | `ui-runtime-reviewer`, `runtime-regression`, `design-parity`, `pixel-parity-calibration`, `evidence-transport` |
 | 🚢 **Finish & ship** | Final candidate checks, merge safety, cleanup | `finalize-workstream` |
@@ -63,6 +63,7 @@ flowchart LR
 |---|---|---|
 | `senior-dev` | A feature, refactor, or bug fix is non-trivial | Main delivery owner: inspect → plan → implement → verify → handoff |
 | `coding-agent-handoff` | Work can be split across coding agents | Defines vertical slices, ownership, return contracts, and final integration |
+| `llm-resource-governor` | Work may spawn subagents, carry large context, use browser/MCP heavily, or run costly model sessions | Keeps fan-out earned, specialist context minimal, model selection explicit, reviewers short-lived, and evidence reusable |
 | `finalize-workstream` | The candidate has been accepted and needs to ship | Resolves ship policy, merge safety, cleanup, and final status |
 
 ### 🎨 Design & product UI
@@ -123,6 +124,7 @@ The agent definitions are intentionally thin. **The canonical workflow stays in 
 senior-dev
   → inspect current repository truth
   → classify risk and scope
+  → apply llm-resource-governor when orchestration is expensive
   → implement directly or split vertical slices
   → targeted verification
   → visual/runtime review when relevant
@@ -157,8 +159,6 @@ Use exact parity only when an exact reference is genuinely an acceptance target.
 ---
 
 ## Optional runtime targeting
-
-Use these only when you want to skip the normal CLI choices.
 
 <details>
 <summary><strong>Claude Code only</strong></summary>
@@ -273,3 +273,4 @@ comind-kit/
 ## License
 
 MIT — see `LICENSE`.
+
