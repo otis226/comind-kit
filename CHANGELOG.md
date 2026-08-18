@@ -22,6 +22,7 @@ CoMind Kit uses Semantic Versioning for tagged releases. Until the first tag is 
 - Cross-skill references use installed skill names rather than legacy repository paths such as `skills/<name>.md`.
 - Public skill package entrypoints no longer depend on private CoMind routing or legacy migration notes.
 - GitHub Actions dependencies are pinned to exact commit SHAs while retaining the documented v4 compatibility line.
+- Independent UI review now preflights reviewer-owned browser capability, reports exact MCP/tool permission blockers, and requires blocked visual/runtime reviews to be rerun after permission is granted instead of reusing the implementer or parent session's pass.
 
 ## Versioning policy
 
