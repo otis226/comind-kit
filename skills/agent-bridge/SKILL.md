@@ -23,7 +23,8 @@ chosen backend. Nothing is duplicated per backend.
 ```text
 AGENT DEFINITION IS THE PORTABLE CONTRACT
 CAPABILITY IS DECLARED, NOT ASSUMED
-NEVER INHERIT AN AMBIENT SANDBOX
+NEVER INHERIT AN AMBIENT SANDBOX OR MODEL
+PROBE ENVIRONMENT-DEPENDENT CAPABILITY BEFORE WORK
 NO EVIDENCE CAPABILITY -> BLOCKED, NOT A PROSE VERDICT
 ```
 
@@ -35,7 +36,7 @@ Apply these rules in order. They are deterministic; do not guess.
 |---|---|
 | 1 | Agent name. Required. |
 | 2 | Backend if it matches a known sdk id, otherwise the backend is `claude` and this token begins the scope. |
-| 3 | Model, only when token 2 was a backend and token 3 is not scope-like. Otherwise the backend default applies. |
+| 3 | Model, only when token 2 was a backend and token 3 is not scope-like. Otherwise the backend's pinned default applies. |
 | rest | Scope: free text describing the task, the surface to inspect, and any preconditions. |
 
 An agent name may instead be written `skill:<name>` to anchor the run on a workflow skill
@@ -66,6 +67,10 @@ node <skill-dir>/dispatch.mjs \
 Write the scope to a file and pass `--scope-file`. Inline `--scope` exists for one-liners only;
 a real task packet is long enough that argument-length limits become a portability hazard.
 
+Agent definitions resolve project-first from `.claude/agents/` and `.grok/agents/`, walking up
+from `--cwd`, then from user-scope and installed plugin agent roots. Nearest project scope wins.
+Use `--agent-file` when an explicit definition must override normal resolution.
+
 Return the dispatcher's stdout to the caller. Do not summarize away the evidence it carries,
 and do not upgrade a `BLOCKED` result into a pass because the prose sounded confident.
 
@@ -75,8 +80,10 @@ The dispatcher enforces what it can prove. These remain the caller's responsibil
 
 **Declare browser need.** Pass `--needs-browser` whenever the task requires evidence from a
 running UI. Agent definitions do not announce this, and inferring it from prose is unreliable.
-Backends whose browser capability is not verified refuse the run instead of producing an
-unevidenced verdict.
+An environment-dependent browser integration must pass its runtime probe before model work
+starts. The Grok backend currently probes the configured `chrome-devtools` MCP server with
+`grok mcp doctor` in the requested `--cwd`. Backends without a verified or successfully probed
+browser capability refuse the run instead of producing an unevidenced verdict.
 
 **Carry preconditions in the scope packet.** A bridged run starts with no session state. If the
 surface needs a running server, a signed-in session, seeded data, or a specific branch checked
@@ -84,8 +91,9 @@ out, the scope must say so and say how. An isolated browser profile in particula
 no cookies, so an authenticated surface needs its sign-in steps spelled out.
 
 **Apply the verdict schema for reviewer-type agents.** Pass `--schema` with the bundled
-`verdict.schema.json` so the result is a checkable object rather than an argument. Leave it off
-for open-ended work, where the natural return is prose.
+`verdict.schema.json` so the result is a checkable object rather than an argument. `PASS` and
+`FAIL` require at least one evidence item; `BLOCKED` requires a non-empty `notVerified` list.
+Leave the schema off for open-ended work, where the natural return is prose.
 
 **Serialize browser runs.** Two agents driving one browser interleave and corrupt each other's
 evidence. Dispatch them one at a time.
@@ -109,14 +117,19 @@ Derived from the agent definition, not from the prompt:
 
 - **Capability boundary.** An agent that disallows write tools, or allowlists tools without
   them, runs read-only. The backend is told in its own vocabulary, and the prompt states the
-  boundary as well. `--readonly yes|no` overrides the derivation when a run genuinely differs.
-- **Explicit sandbox and model, always.** Every backend invocation passes them explicitly, so a
-  run never silently inherits a permissive global default a user set for interactive work.
+  boundary as well. For Grok, read-only runs use the native `read-only` sandbox plus removal of
+  edit, shell, and subagent escape paths; write-capable runs use the `workspace` sandbox.
+  `--readonly yes|no` overrides the derivation when a run genuinely differs.
+- **Explicit sandbox and model, always.** Every enabled backend invocation passes both explicitly,
+  so a run cannot silently inherit a permissive sandbox or a drifting model from interactive
+  user configuration. A backend without a pinned default model must receive `--model` or the
+  dispatcher refuses the run.
 - **Skills resolved or refused.** Skills declared by the agent are read from the installed skill
   root and inlined. A missing skill fails the run rather than letting the backend improvise a
   workflow of its own.
-- **Capability gate before work.** A missing CLI, a disabled backend, or a required browser the
-  backend cannot provide returns `BLOCKED` before any model is invoked.
+- **Capability gate before work.** A missing CLI, a disabled backend, or a required browser whose
+  static declaration or runtime probe cannot establish capability returns `BLOCKED` before any
+  model is invoked.
 
 ## 6. Result envelope
 
@@ -127,8 +140,9 @@ the backend's own output unwrapped.
 Status values: `OK`, `BLOCKED`, `BACKEND_FAILED`, `ERROR`, `DRY_RUN`.
 Exit codes: `0` ok, `2` usage or resolution error, `3` blocked, `4` backend failure.
 
-`--dry-run` prints the composed prompt and the exact argv without invoking anything. Use it to
-inspect what a backend will actually receive.
+`--dry-run` prints the composed prompt and the exact argv without invoking the model backend.
+Capability preflights such as CLI presence and browser probes still run because a dry-run must
+not claim an impossible execution plan.
 
 ## 7. Adding or changing a backend
 
@@ -136,12 +150,16 @@ Edit the `BACKENDS` table at the top of `dispatch.mjs`: `bin`, `enabled`, `brows
 `defaultModel`, and a `build()` that maps the common context onto that CLI's flags. Nothing
 else in the skill changes, and no caller changes.
 
-Set `browser` honestly. `verified` means the backend has been observed driving a real browser
-for this kind of task; `unverified` means plausible but unproven. That single field is what
-stops an unevidenced verdict from reaching a reviewer, so an optimistic value defeats the
-mechanism it exists to protect.
+Set `browser` honestly. A static `verified` value is only appropriate for capability that is
+truly part of the backend itself. Environment-dependent integrations should use a runtime probe
+instead; `unverified` or `none` must fail closed when `--needs-browser` is requested. An
+optimistic browser declaration defeats the mechanism that prevents unevidenced reviewer passes.
 
-Ship a new backend disabled until its CLI is installed and its path has actually been run.
+Every enabled backend must map read-only/write-capable execution onto a real backend boundary,
+and every invocation must pass an explicit model. Do not rely on a vendor's interactive global
+config for either property.
+
+Ship a new backend disabled until its CLI is installed and its path has actually been exercised.
 
 ## 8. Bridging a skill instead of an agent
 
@@ -175,6 +193,9 @@ path reads it from the repository like any other file.
 ## 9. Limits
 
 - An agent with no definition file cannot be bridged; pass `--agent-file` explicitly.
+- A successful browser preflight proves the configured integration was reachable at dispatch
+  time, not that every later UI interaction will succeed. If required evidence still cannot be
+  collected, the reviewer must return `BLOCKED`.
 - The bridge replays a contract; it cannot grant a backend a tool that backend does not have.
-- Vendor CLIs change their flags. When a backend starts failing, check its flags before
-  assuming the agent contract regressed.
+- Vendor CLIs change their flags and safety semantics. When a backend starts failing, check its
+  current CLI contract before assuming the agent contract regressed.
