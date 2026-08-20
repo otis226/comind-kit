@@ -26,6 +26,8 @@ CoMind Kit uses Semantic Versioning for tagged releases. Until the first tag is 
 - GitHub Actions dependencies are pinned to exact commit SHAs while retaining the documented v4 compatibility line.
 - Independent UI review preflights reviewer-owned browser capability, reports exact MCP/tool permission blockers, and requires blocked visual/runtime reviews to be rerun after permission is granted instead of reusing the implementer or parent session's pass.
 - `senior-dev` and coding handoff now default to single-owner FAST work, bounded STANDARD fan-out, compact task packets, review routing by actual change type, and reuse of still-valid evidence.
+- `llm-resource-governor` now treats premium-model quota as a first-class budget: premium owners keep authority/architecture/integration reasoning while bounded source inspection, code review, implementation, UI review, and evidence work route to the cheapest capable prepaid/subscription or low-cost runtime. Worker packets now carry explicit context budgets, output budgets, escalation conditions, and compact return contracts.
+- `coding-agent-handoff` now applies that cost-aware offload policy whenever runtime/model choice is available, while keeping `agent-bridge` limited to execution transport and capability enforcement.
 
 ## Versioning policy
 
