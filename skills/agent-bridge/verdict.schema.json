@@ -49,5 +49,26 @@
       "description": "Anything in scope that could not be checked. Must be non-empty when verdict is BLOCKED.",
       "items": { "type": "string" }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "verdict": { "enum": ["PASS", "FAIL"] } },
+        "required": ["verdict"]
+      },
+      "then": {
+        "properties": { "evidence": { "minItems": 1 } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "verdict": { "const": "BLOCKED" } },
+        "required": ["verdict"]
+      },
+      "then": {
+        "required": ["notVerified"],
+        "properties": { "notVerified": { "minItems": 1 } }
+      }
+    }
+  ]
 }
