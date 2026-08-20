@@ -16,6 +16,7 @@ CoMind Kit uses Semantic Versioning for tagged releases. Until the first tag is 
 - Public issue templates for bugs, skill proposals, and documentation problems, with security reports routed to the security policy.
 - Tag-driven GitHub Release workflow for future SemVer releases.
 - `llm-resource-governor` for resource-aware agent orchestration: earned fan-out, minimum sufficient specialist context, explicit cheaper-capable specialist model selection, short-lived browser reviewers, evidence reuse, and concurrency discipline.
+- `agent-bridge` for running an existing agent definition or workflow skill on a non-native coding CLI, choosing backend and model per call, deriving the capability boundary from the definition, passing sandbox and model explicitly instead of inheriting ambient configuration, and blocking a run whose required evidence capability the backend cannot provide.
 
 ### Changed
 
