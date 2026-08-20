@@ -20,27 +20,31 @@ const HOME = os.homedir();
 
 /* ------------------------------------------------------------------ backends */
 // Adding a backend = adding one entry here. Nothing else changes.
-//   browser: 'verified'   proven able to drive a real browser for this workflow
-//            'unverified' plausible but never proven -> BLOCKED when browser evidence is required
-//            'none'       no browser at all
+// browser may be:
+//   'verified' / 'unverified' / 'none'
+//   { type: 'mcp-doctor', server: '<name>' } for a runtime capability probe.
 const BACKENDS = {
   grok: {
     bin: 'grok',
     enabled: true,
-    browser: 'verified',
-    defaultModel: null,
-    // Grok uses internal tool ids; Claude Write/Edit/MultiEdit map to search_replace.
-    writeTools: 'search_replace,write_file',
+    browser: { type: 'mcp-doctor', server: 'chrome-devtools' },
+    // Keep this pinned so a bridged run cannot drift with ~/.grok/config.toml.
+    defaultModel: 'grok-4.6',
     build(ctx) {
       const args = [
         '--prompt-file', ctx.promptFile,
         '--output-format', 'plain',
-        '--permission-mode', 'bypassPermissions',
+        '--sandbox', ctx.readonly ? 'read-only' : 'workspace',
+        '--permission-mode', ctx.readonly ? 'dontAsk' : 'bypassPermissions',
         '--max-turns', String(ctx.maxTurns),
+        '-m', ctx.model,
       ];
-      if (ctx.model) args.push('-m', ctx.model);
       if (ctx.effort) args.push('--effort', ctx.effort);
-      if (ctx.readonly) args.push('--disallowed-tools', this.writeTools);
+      if (ctx.readonly) {
+        // Defense in depth: the sandbox is the filesystem boundary; removing edit, shell,
+        // and subagent paths prevents a reviewer from bypassing it through another tool.
+        args.push('--disallowed-tools', 'search_replace,write_file,run_terminal_cmd,Agent');
+      }
       if (ctx.needsBrowser) args.push('--allow', 'MCPTool(chrome-devtools__*)');
       if (ctx.schemaText) args.push('--json-schema', ctx.schemaText);
       return { args, stdin: null, resultFile: null };
@@ -51,13 +55,11 @@ const BACKENDS = {
     bin: 'codex',
     enabled: true,
     browser: 'unverified',
-    // Pinned so a run never drifts with the user's global config.
     defaultModel: 'gpt-5.6-sol',
     build(ctx) {
       const args = ['exec', '-'];
-      // Never inherit a global sandbox setting: always explicit.
       args.push('-s', ctx.readonly ? 'read-only' : 'workspace-write');
-      args.push('-m', ctx.model || this.defaultModel);
+      args.push('-m', ctx.model);
       if (ctx.effort) args.push('-c', 'model_reasoning_effort="' + ctx.effort + '"');
       if (ctx.schemaFile) args.push('--output-schema', ctx.schemaFile);
       args.push('-o', ctx.resultFile);
@@ -66,7 +68,6 @@ const BACKENDS = {
   },
 
   // Placeholder: no code path is claimed until the CLI exists and has been tested.
-  // To enable: install the CLI, set enabled:true, fill build(), set an honest browser status.
   cursor: {
     bin: 'cursor-agent',
     enabled: false,
@@ -78,7 +79,7 @@ const BACKENDS = {
 
 /* --------------------------------------------------------------------- utils */
 function fail(code, status, message, extra) {
-  const envelope = Object.assign({ status: status, agent: null, sdk: null }, extra || {}, { error: message });
+  const envelope = Object.assign({ status, agent: null, sdk: null }, extra || {}, { error: message });
   process.stdout.write(JSON.stringify(envelope, null, 2) + '\n');
   process.exit(code);
 }
@@ -118,18 +119,48 @@ function onPath(bin) {
   return spawnSync(probe, [bin], { encoding: 'utf8' }).status === 0;
 }
 
+function probeBrowser(backend, cwd) {
+  const capability = backend.browser;
+  if (capability === 'verified') return { ok: true };
+  if (capability && typeof capability === 'object' && capability.type === 'mcp-doctor') {
+    const run = spawnSync(backend.bin, ['mcp', 'doctor', capability.server, '--json'], {
+      cwd: cwd || process.cwd(),
+      encoding: 'utf8',
+    });
+    if (run.status === 0) return { ok: true };
+    const detail = ((run.stderr || run.stdout || '').trim().slice(0, 1200) || 'probe exited with status ' + run.status);
+    return { ok: false, detail: 'MCP server "' + capability.server + '" failed runtime probe: ' + detail };
+  }
+  return { ok: false, detail: 'browser status is "' + String(capability) + '"' };
+}
+
 /* ------------------------------------------------- agent definition resolving */
-function agentSearchDirs() {
+function projectAgentDirs(baseDir) {
+  const dirs = [];
+  let dir = path.resolve(baseDir || process.cwd());
+  for (;;) {
+    dirs.push(path.join(dir, '.claude', 'agents'));
+    dirs.push(path.join(dir, '.grok', 'agents'));
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return dirs;
+}
+
+function agentSearchDirs(baseDir) {
   const claudeHome = process.env.CLAUDE_CONFIG_DIR || path.join(HOME, '.claude');
   const dirs = [
+    ...projectAgentDirs(baseDir),
     path.join(claudeHome, 'agents'),
     path.join(HOME, '.grok', 'agents'),
   ];
+
   // Bounded scan for plugin-provided agent definitions.
   const walk = (dir, depth) => {
     if (depth > 6 || !fs.existsSync(dir)) return;
     let entries = [];
-    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (err) { return; }
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
       if (!e.isDirectory()) continue;
       if (e.name === 'agents') dirs.push(path.join(dir, e.name));
@@ -137,28 +168,28 @@ function agentSearchDirs() {
     }
   };
   walk(path.join(claudeHome, 'plugins'), 0);
-  return dirs.filter((d) => fs.existsSync(d));
+
+  return [...new Set(dirs)].filter((d) => fs.existsSync(d));
 }
 
-function resolveAgentFile(name, explicit) {
+function resolveAgentFile(name, explicit, baseDir) {
   if (explicit) {
     if (!fs.existsSync(explicit)) fail(2, 'ERROR', 'Agent file not found: ' + explicit);
     return explicit;
   }
-  const dirs = agentSearchDirs();
+  const dirs = agentSearchDirs(baseDir);
   // Resolve per directory in priority order: filename first, then frontmatter name.
-  // A definition file may be named differently from the agent it declares.
   for (const dir of dirs) {
     const byFilename = path.join(dir, name + '.md');
     if (fs.existsSync(byFilename)) return byFilename;
     let entries = [];
-    try { entries = fs.readdirSync(dir); } catch (err) { continue; }
+    try { entries = fs.readdirSync(dir); } catch { continue; }
     for (const entry of entries) {
       if (!entry.endsWith('.md')) continue;
       const candidate = path.join(dir, entry);
       try {
         if (readAgentDefinition(candidate).meta.name === name) return candidate;
-      } catch (err) { /* unreadable definition: skip */ }
+      } catch { /* unreadable definition: skip */ }
     }
   }
   fail(2, 'ERROR',
@@ -192,7 +223,7 @@ function readAgentDefinition(file) {
   for (const k of Object.keys(meta)) {
     if (Array.isArray(meta[k]) && meta[k].length === 0) meta[k] = '';
   }
-  return { meta: meta, body: m[2].trim() };
+  return { meta, body: m[2].trim() };
 }
 
 function deriveReadonly(meta, override) {
@@ -237,49 +268,60 @@ function loadSkill(name) {
 
 /* ------------------------------------------------------------------ main flow */
 const opts = parseArgs(process.argv.slice(2));
-if (!opts.agent && !opts.agentFile && !opts.skill) fail(2, 'ERROR', 'Missing --agent or --skill');
+const hasAgentAnchor = Boolean(opts.agent || opts.agentFile);
+if (hasAgentAnchor === Boolean(opts.skill)) fail(2, 'ERROR', 'Pass exactly one anchor: --agent/--agent-file or --skill');
 if (!opts.sdk) fail(2, 'ERROR', 'Missing --sdk');
+if (!['auto', 'yes', 'no'].includes(opts.readonly)) fail(2, 'ERROR', '--readonly must be auto, yes, or no');
+if (opts.maxTurns !== undefined && (!Number.isInteger(opts.maxTurns) || opts.maxTurns < 1)) {
+  fail(2, 'ERROR', '--max-turns must be a positive integer');
+}
 
 const backend = BACKENDS[opts.sdk];
-if (!backend) {
-  fail(2, 'ERROR', 'Unknown sdk "' + opts.sdk + '". Known: ' + Object.keys(BACKENDS).join(', '));
-}
+if (!backend) fail(2, 'ERROR', 'Unknown sdk "' + opts.sdk + '". Known: ' + Object.keys(BACKENDS).join(', '));
 if (!backend.enabled) {
   fail(3, 'BLOCKED', 'Backend "' + opts.sdk + '" is a placeholder and not enabled in this build.',
-    { agent: opts.agent, sdk: opts.sdk });
-}
-
-// Capability gate before any work: never let a browserless run produce a prose verdict.
-if (opts.needsBrowser && backend.browser !== 'verified') {
-  fail(3, 'BLOCKED',
-    'Task requires browser evidence but backend "' + opts.sdk + '" has browser status "' + backend.browser +
-    '". Use a backend with verified browser capability, or drop --needs-browser if evidence is not required.',
-    { agent: opts.agent, sdk: opts.sdk });
+    { agent: opts.agent || opts.skill, sdk: opts.sdk });
 }
 if (!onPath(backend.bin)) {
   fail(3, 'BLOCKED', 'Backend CLI "' + backend.bin + '" is not on PATH.',
-    { agent: opts.agent, sdk: opts.sdk });
+    { agent: opts.agent || opts.skill, sdk: opts.sdk });
+}
+if (opts.needsBrowser) {
+  const browser = probeBrowser(backend, opts.cwd);
+  if (!browser.ok) {
+    fail(3, 'BLOCKED',
+      'Task requires browser evidence but backend "' + opts.sdk + '" cannot prove the required browser capability. ' + browser.detail,
+      { agent: opts.agent || opts.skill, sdk: opts.sdk });
+  }
 }
 
 SKILL_ROOTS = skillRoots(opts.cwd);
 
-// A run is anchored either on an agent definition or directly on a skill.
 let agentFile = null;
 let parsed = { meta: {}, body: '' };
 let agentName;
-if (opts.agent || opts.agentFile) {
-  agentFile = resolveAgentFile(opts.agent, opts.agentFile);
+if (hasAgentAnchor) {
+  agentFile = resolveAgentFile(opts.agent, opts.agentFile, opts.cwd);
   parsed = readAgentDefinition(agentFile);
   agentName = parsed.meta.name || opts.agent || path.basename(agentFile, '.md');
 } else {
   agentName = opts.skill;
 }
-// With no agent definition there is no declared boundary: the run is write-capable
-// unless the caller says otherwise. Workflow skills generally do need to write.
-const readonly = deriveReadonly(parsed.meta, opts.readonly);
 
-const scope = opts.scopeFile ? fs.readFileSync(opts.scopeFile, 'utf8') : (opts.scope || '');
-if (!scope.trim()) fail(2, 'ERROR', 'Missing --scope or --scope-file');
+const readonly = deriveReadonly(parsed.meta, opts.readonly);
+const model = opts.model || backend.defaultModel || null;
+if (!model) {
+  fail(2, 'ERROR', 'Backend "' + opts.sdk + '" has no pinned default model; pass --model explicitly.',
+    { agent: agentName, sdk: opts.sdk });
+}
+
+let scope = '';
+try {
+  scope = opts.scopeFile ? fs.readFileSync(opts.scopeFile, 'utf8') : (opts.scope || '');
+} catch (err) {
+  fail(2, 'ERROR', 'Could not read scope file: ' + err.message, { agent: agentName, sdk: opts.sdk });
+}
+if (!scope.trim()) fail(2, 'ERROR', 'Missing --scope or --scope-file', { agent: agentName, sdk: opts.sdk });
 
 const skillNames = asList(parsed.meta.skills);
 if (opts.skill && skillNames.indexOf(opts.skill) === -1) skillNames.unshift(opts.skill);
@@ -287,14 +329,15 @@ const skills = [];
 const missingSkills = [];
 for (const name of skillNames) {
   const content = loadSkill(name);
-  if (content) skills.push({ name: name, content: content });
+  if (content) skills.push({ name, content });
   else missingSkills.push(name);
 }
 if (missingSkills.length) {
   fail(2, 'ERROR',
     'Agent "' + agentName + '" declares skills that could not be resolved: ' + missingSkills.join(', ') +
     '. Searched: ' + SKILL_ROOTS.join(', ') +
-    '. Install them before bridging, otherwise the run would silently improvise its own workflow.');
+    '. Install them before bridging, otherwise the run would silently improvise its own workflow.',
+    { agent: agentName, sdk: opts.sdk });
 }
 
 /* ------------------------------------------------------------ prompt assembly */
@@ -302,8 +345,8 @@ const sections = [];
 sections.push(
   '# Operating contract\n\n' +
   'You are running ' + (agentFile ? 'as the agent' : 'the workflow') + ' "' + agentName +
-  '" on a non-native runtime. ' +
-  'The contract below is authoritative. Follow it exactly; do not substitute your own workflow.'
+  '" on a non-native runtime. The contract below is authoritative. ' +
+  'Follow it exactly; do not substitute your own workflow.'
 );
 if (parsed.body) sections.push('## Agent definition: ' + agentName + '\n\n' + parsed.body);
 for (const s of skills) sections.push('## Agent Skill: ' + s.name + '\n\n' + s.content);
@@ -320,11 +363,9 @@ let schemaFile = null;
 let schemaText = null;
 if (opts.schema) {
   schemaFile = path.resolve(opts.schema);
-  if (!fs.existsSync(schemaFile)) fail(2, 'ERROR', 'Schema file not found: ' + schemaFile);
+  if (!fs.existsSync(schemaFile)) fail(2, 'ERROR', 'Schema file not found: ' + schemaFile, { agent: agentName, sdk: opts.sdk });
   schemaText = fs.readFileSync(schemaFile, 'utf8');
-  sections.push(
-    '# Return contract\n\nReturn only JSON matching this schema:\n\n```json\n' + schemaText.trim() + '\n```'
-  );
+  sections.push('# Return contract\n\nReturn only JSON matching this schema:\n\n```json\n' + schemaText.trim() + '\n```');
 } else {
   sections.push(
     '# Return contract\n\n' +
@@ -342,27 +383,27 @@ const resultFile = path.join(os.tmpdir(), 'agent-bridge-' + stamp + '.result.txt
 fs.writeFileSync(promptFile, prompt, 'utf8');
 
 const ctx = {
-  promptFile: promptFile,
-  resultFile: resultFile,
-  prompt: prompt,
-  model: opts.model || backend.defaultModel || null,
+  promptFile,
+  resultFile,
+  prompt,
+  model,
   effort: opts.effort || null,
-  readonly: readonly,
+  readonly,
   needsBrowser: opts.needsBrowser,
   maxTurns: opts.maxTurns || Number(process.env.AGENT_BRIDGE_MAX_TURNS || 40),
-  schemaFile: schemaFile,
-  schemaText: schemaText,
+  schemaFile,
+  schemaText,
 };
 
 const plan = backend.build(ctx);
 const info = {
   status: 'OK',
   agent: agentName,
-  agentFile: agentFile,
+  agentFile,
   sdk: opts.sdk,
   model: ctx.model,
   effort: ctx.effort,
-  readonly: readonly,
+  readonly,
   needsBrowser: opts.needsBrowser,
   skills: skills.map((s) => s.name),
   promptBytes: Buffer.byteLength(prompt, 'utf8'),
@@ -401,7 +442,7 @@ const envelope = Object.assign({}, info, {
   exitCode: run.status,
   result: output.trim(),
 });
-if (run.status !== 0) envelope.stderr = (run.stderr || '').trim().slice(0, 4000);
+if (run.status !== 0) envelope.stderr = (run.stderr || run.error?.message || '').trim().slice(0, 4000);
 
 process.stdout.write(JSON.stringify(envelope, null, 2) + '\n');
 process.exit(run.status === 0 ? 0 : 4);
