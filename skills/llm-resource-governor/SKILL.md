@@ -1,7 +1,7 @@
 ---
 name: llm-resource-governor
 description: >-
-  Use when a coding or review workflow may spawn subagents, accumulate large context, use browser/MCP-heavy evidence, or run multiple expensive model sessions. Preserve delivery quality while minimizing unnecessary model, context, tool, and concurrency cost.
+  Use when a coding or review workflow may spawn subagents, accumulate large context, use browser/MCP-heavy evidence, or run multiple expensive model sessions. Preserve delivery quality while minimizing unnecessary premium-model, context, tool, and concurrency cost by offloading bounded work to the cheapest capable prepaid or low-cost runtime.
 ---
 
 <!-- comind-managed-skill: llm-resource-governor -->
@@ -10,33 +10,64 @@ description: >-
 
 Optimize orchestration cost without weakening source resolution, implementation ownership, verification, independent review, or ship gates.
 
-Core rules:
+The default operating model is:
 
 ```text
-QUALITY GATES STAY
-FAN-OUT IS EARNED, NOT DEFAULT
+PREMIUM OWNER THINKS AND DECIDES
+BOUNDED WORKERS READ / WRITE / REVIEW
+CHEAPEST CAPABLE RUNTIME FIRST
 MINIMUM SUFFICIENT CONTEXT
-STRONGEST REASONING WHERE IT MATTERS MOST
-EXPLICIT SPECIALIST MODEL SELECTION
-SHORT-LIVED SPECIALISTS
-REUSE EVIDENCE BEFORE RE-RUNNING
-CONCURRENCY MUST BUY REAL LATENCY
+COMPACT RESULTS BACK TO THE OWNER
+ESCALATION IS EARNED
+QUALITY GATES STAY
 ```
 
-## 1. Govern the actual expensive resources
+This skill governs policy. `agent-bridge` is an execution transport when a bounded worker should run on another CLI/backend; do not move cost-routing policy into the bridge.
+
+## 1. Govern the resources that actually burn quota
 
 Treat these as separate budgets:
 
+- premium-owner input and output tokens;
 - number of active model contexts;
-- context size carried by each context;
-- model capability/cost tier when runtime selection exists;
+- context size carried by each worker;
+- model/runtime cost source when selection exists;
 - long-lived tool transcripts, especially browser/MCP output;
 - concurrent subagents/sessions;
-- repeated verification against an unchanged candidate.
+- repeated verification against an unchanged candidate;
+- worker output that the premium owner must ingest again.
 
 Machine CPU/RAM governors do not control model quota. Apply this skill even when test/build resource scheduling is already correct.
 
-## 2. Main owner vs specialists
+A cheap worker that returns a huge transcript can still be expensive because the premium owner must read it. Optimize both execution cost and return-path cost.
+
+## 2. Cost sources and routing priority
+
+Classify available execution capacity by cost source, independently from vendor/model name:
+
+```text
+PREPAID_SUBSCRIPTION
+LOW_COST_API
+PREMIUM_OWNER
+```
+
+A prepaid subscription means marginal usage is already paid for within its quota. A low-cost API means usage is metered but materially cheaper than the premium owner. The premium owner is the strongest reasoning context whose quota should be preserved for decisions that need it.
+
+For bounded work, choose the cheapest source that satisfies all required capabilities and evidence requirements:
+
+```text
+capability fit
+→ safety/enforcement fit
+→ prepaid or low-cost fit
+→ model strength needed for this bounded task
+→ latency
+```
+
+Do not choose a cheaper worker that cannot provide required browser evidence, filesystem enforcement, structured output, repository access, or other hard capability.
+
+Do not consume the premium owner merely because it is already open when a capable prepaid/cheap worker can perform the bounded task independently.
+
+## 3. Main owner vs workers
 
 Keep one main owner responsible for:
 
@@ -44,84 +75,247 @@ Keep one main owner responsible for:
 - product/business/design authority;
 - risk classification;
 - decomposition and ownership;
-- shared implementation/integration decisions;
-- final candidate inspection;
+- architecture and shared-contract decisions;
+- conflict resolution between worker findings;
+- final candidate reasoning;
 - final handoff state.
 
-Prefer the strongest available reasoning tier for the main owner when the task has meaningful ambiguity, architecture, business rules, security, lifecycle, or integration risk.
+Prefer the strongest available reasoning tier for the main owner when the task contains meaningful ambiguity, architecture, business rules, security, lifecycle, destructive operations, or cross-slice integration.
 
-Specialists should be narrow. When the runtime supports per-agent model selection, explicitly select a cheaper capable tier by default for bounded work such as:
+The main owner should avoid spending premium quota on mechanical work when a bounded worker can do it. Offload by default when capability is sufficient:
 
-- read-only exploration with an exact question;
-- isolated implementation slices with clear contracts;
-- visual review against a resolved authority;
-- runtime review with explicit scenarios;
-- repetitive evidence collection.
+- repository search and exact-source inspection;
+- bounded code review;
+- isolated implementation with clear acceptance rules;
+- repetitive refactors or migrations with explicit boundaries;
+- screenshot-based UI critique;
+- browser/runtime UI review;
+- targeted verification and evidence collection;
+- log/console/network inspection for a defined scenario.
 
-Do not rely on implicit inheritance from the main owner's model when an explicit cheaper-capable selection is available.
+The owner does not need to reread every raw artifact the worker inspected. It needs the worker's compact evidence-bearing result plus exact source locators for anything that may require escalation.
 
-Escalate a specialist to the strongest tier only when the specialist task itself contains material ambiguity, high-risk reasoning, or repeated failure that indicates the cheaper tier is insufficient.
+## 4. Work-class routing defaults
 
-## 3. Fan-out gate
+Use these defaults unless project-specific constraints require stronger routing.
 
-Do not spawn a subagent merely because the runtime supports subagents.
+| Work class | Default execution source | Premium owner role |
+|---|---|---|
+| Architecture, business rules, lifecycle, security, ambiguous product decisions | `PREMIUM_OWNER` | Reason and decide directly |
+| Broad source discovery with an exact question | `PREPAID_SUBSCRIPTION`, otherwise `LOW_COST_API` | Consume compact findings |
+| Bounded code review / diff inspection | `PREPAID_SUBSCRIPTION`, otherwise capable cheap API | Resolve only major ambiguity/conflict |
+| Bounded implementation / refactor | `PREPAID_SUBSCRIPTION` preferred | Define contract, integrate, decide shared changes |
+| Visual UI review from screenshots/rendered state | capable `LOW_COST_API` or prepaid vision worker | Escalate only ambiguous/high-severity findings |
+| Runtime/browser UI review | cheapest worker with verified browser capability | Decide on blockers/conflicts |
+| Repetitive test/evidence collection | cheapest capable worker | Consume verdict/evidence only |
+| Destructive release/deploy/credential/database mutation | project-approved trusted path | Retain explicit owner control |
+
+Vendor names are deliberately absent. Runtime availability changes; capability and cost source are the durable routing dimensions.
+
+## 5. Offload gate
+
+Before the premium owner performs a substantial read/write/review pass itself, ask:
+
+```text
+Is this mainly a decision or mainly execution/evidence?
+Can a cheaper/prepaid worker operate independently?
+Can I express the task with a bounded scope and acceptance rules?
+Can the worker return compact evidence instead of a transcript?
+Does the worker have the required enforcement/capabilities?
+```
+
+If the work is mainly execution/evidence and all remaining answers are yes, offload it.
+
+Do not offload solely to create activity. If constructing the packet and re-integrating the result costs more than doing a tiny task directly, keep it local.
+
+## 6. Minimum sufficient worker packet
+
+A fresh worker must not inherit the main conversation by default.
+
+Pass a compact task packet with only what it needs:
+
+```text
+ROLE / SKILL
+WORK CLASS
+GOAL
+CANDIDATE / SHA / WORKTREE
+EXACT SCOPE OR ROUTE
+RELEVANT AUTHORITY / ACCEPTANCE RULES
+OWNED FILES OR READ-ONLY BOUNDARY
+REQUIRED CAPABILITIES
+REQUIRED SCENARIOS / CHECKS
+CONTEXT BUDGET
+OUTPUT BUDGET
+ESCALATE WHEN
+RETURN CONTRACT
+```
+
+Prefer links, exact paths, SHAs, issue/PR identifiers, and concise authority summaries over copied transcripts.
+
+If the worker can resolve a detail cheaply from canonical source, give it the locator instead of pasting the source. Do not preload unrelated project docs, earlier debugging logs, previous browser traces, or implementer rationale.
+
+`CONTEXT BUDGET` should state what the worker may load, for example:
+
+```text
+- Start from the named files/routes only.
+- Follow imports/callers only when needed to answer the task.
+- Do not scan unrelated modules.
+- Do not restate source content in the return unless it is evidence.
+```
+
+## 7. Compact output budgets
+
+Every bounded worker should receive an explicit output budget. The purpose is to reduce both worker generation and premium-owner ingestion.
+
+Default reviewer budget:
+
+```text
+summary: <= 120 words
+findings: <= 8
+per finding: <= 70 words
+include: severity + exact location + issue + evidence
+exclude: chain-of-thought, tutorial prose, repeated context
+```
+
+Default source-inspection/code-review budget:
+
+```text
+summary: <= 150 words
+findings: <= 10
+per finding: <= 80 words
+include exact file/line/symbol/command evidence
+return only material findings
+```
+
+Default implementation-worker budget:
+
+```text
+Implemented: compact bullets
+Files changed: exact paths
+Verification: command/check + PASS/FAIL
+Shared integration needed: explicit or NONE
+Assumptions/blockers: explicit or NONE
+Do not narrate the implementation process
+```
+
+A structured schema should be used when available. For reviewer-style runs through `agent-bridge`, use its verdict schema so the owner receives evidence-bearing PASS/FAIL/BLOCKED rather than free-form prose.
+
+Do not hard-truncate a structured result after generation; constrain the return contract before execution.
+
+## 8. Earned escalation
+
+A cheap/prepaid worker should finish the bounded task or escalate, not silently broaden scope.
+
+Escalate to the premium owner when any of these occur:
+
+- source/design/business authority remains materially ambiguous after bounded inspection;
+- a blocker touches architecture, lifecycle, security, destructive behavior, or shared contracts;
+- required capability is unavailable or cannot be verified;
+- two independent workers materially disagree;
+- the same bounded worker fails the task or verification repeatedly;
+- the worker would need to expand outside its ownership boundary;
+- confidence is insufficient for a high-severity finding or mutation.
+
+Do not automatically launch a second reviewer after every first pass. A second opinion is earned by uncertainty, severity, disagreement, or an explicit project gate.
+
+## 9. Fan-out and concurrency
+
+Do not spawn a worker merely because the runtime supports subagents.
 
 ### FAST
 
 Default:
 
 ```text
-main owner only
+premium owner + zero or one bounded worker when offload has clear value
 ```
-
-Allow a specialist only when it removes a real blocker or provides required independent evidence.
 
 ### STANDARD
 
 Default:
 
 ```text
-main owner + up to 2 concurrent specialists
+premium owner + up to 2 concurrent bounded workers
 ```
 
-Spawn only for independent vertical slices or genuinely independent read-only investigation/review.
+Only parallelize independent scopes whose outputs do not require each other.
 
 ### HIGH_RISK
 
-Prefer parallel investigation over parallel mutation.
+Prefer parallel investigation over parallel mutation. Keep destructive/shared mutation ownership centralized.
 
-Additional specialists are allowed when they reduce a concrete risk or critical-path delay, but the owner must still keep mutation ownership explicit and integration centralized.
-
-Do not exceed the default concurrency merely to keep every possible role busy.
-
-## 4. Minimum sufficient context
-
-A fresh subagent must not inherit the main conversation by default.
-
-Pass a compact task packet containing only what the specialist needs, for example:
+Before starting another context, ask:
 
 ```text
-ROLE / SKILL
-GOAL
-CANDIDATE / SHA / WORKTREE
-EXACT SCOPE OR ROUTE
-RELEVANT AUTHORITY / ACCEPTANCE RULES
-OWNED FILES OR READ-ONLY BOUNDARY
-REQUIRED SCENARIOS / CHECKS
-RETURN CONTRACT
+Will this work proceed independently now?
+Will it shorten the critical path or preserve meaningful premium quota?
+Is ownership non-overlapping?
+Is required context compact?
+Will the owner receive a compact result rather than another large transcript?
 ```
 
-Prefer links, exact paths, SHAs, issue/PR identifiers, and concise authority summaries over copied transcripts.
+If any answer is materially no, queue the work instead.
 
-Do not preload unrelated project docs, earlier debugging logs, previous browser traces, or implementer rationale.
+## 10. UI review offload
 
-If a specialist can resolve a detail cheaply from canonical source, give it the source locator instead of pasting the source into its prompt.
+UI review is a strong default offload target because much of the work is evidence collection rather than premium architectural reasoning.
 
-## 5. Context lifecycle
+Route visual review to the cheapest capable vision worker that can inspect the required screenshot/rendered state.
 
-Long context is allowed when it remains useful, not because the session happened to stay open.
+Route runtime review to the cheapest worker with verified browser/runtime capability. Give it exact route/state/fixture, exact interactions, candidate identifier, and health checks.
 
-Checkpoint, compact, or start a fresh context at natural boundaries such as:
+Use this review routing:
+
+```text
+visual/composition/style changed
+→ visual review worker
+
+interaction/state/navigation/form/async/runtime integration changed
+→ runtime review worker
+
+both changed meaningfully
+→ both, preferably sequential unless they are truly independent
+
+neither changed
+→ neither UI reviewer
+```
+
+Browser/MCP workers are short-lived evidence workers. They collect scenario-specific evidence, return a concise verdict, then end. Do not keep their browser transcript alive for implementation work.
+
+If the cheap reviewer returns a clear evidence-backed result, the premium owner should not redo the same UI inspection. Escalate only the disputed or high-risk part.
+
+## 11. Coding offload
+
+For implementation, prefer a capable prepaid coding runtime when the contract is clear.
+
+The premium owner should provide:
+
+```text
+GOAL
+CURRENT AUTHORITY / BUSINESS GUARDRAILS
+OWNED SCOPE
+DO NOT CHANGE
+ACCEPTANCE RULES
+TARGETED VERIFICATION
+OUTPUT BUDGET
+ESCALATE WHEN
+```
+
+The worker should inspect, edit, test, and return the compact implementation contract. The premium owner owns architecture, shared wiring, cross-slice integration, and unresolved trade-offs.
+
+Do not make the premium owner reread all files just to repeat the worker's work. Inspect the combined diff/evidence at the level required by risk and integration.
+
+## 12. Evidence reuse and context lifecycle
+
+Do not rerun expensive evidence against an unchanged candidate just because a new phase started.
+
+If the candidate changes:
+
+1. identify which evidence is invalidated;
+2. rerun only that evidence;
+3. rerun broader verification only when blast radius is unclear.
+
+Checkpoint, compact, or start a fresh context at natural boundaries:
 
 - source resolution completed and implementation starts;
 - implementation stabilizes and independent review starts;
@@ -129,7 +323,7 @@ Checkpoint, compact, or start a fresh context at natural boundaries such as:
 - a PR/workstream is handed off;
 - the user switches to an unrelated issue.
 
-Preserve the compact durable state:
+Preserve only compact durable state:
 
 ```text
 candidate SHA
@@ -137,89 +331,32 @@ open decisions
 acceptance criteria
 verification already proven
 remaining blockers
+worker verdicts with evidence locators
 ```
 
 Discard stale tool chatter and superseded reasoning.
 
-## 6. Browser and MCP discipline
+## 13. Stop conditions
 
-Browser/runtime reviewers should be short-lived evidence workers.
+End a worker when it has returned its contract.
 
-Give them:
+Do not keep background/loop workers alive without a current required responsibility.
 
-- exact route/state/fixture;
-- exact interactions to exercise;
-- exact runtime health checks required;
-- the candidate identifier;
-- a compact verdict contract.
+End or compact the main context when the workstream reaches a stable handoff and the next task is unrelated.
 
-They should collect only evidence relevant to the affected surface, return a concise verdict, then end.
+## 14. Reporting
 
-Do not keep a browser-heavy reviewer alive for subsequent implementation work. Do not repeatedly inspect broad DOM/network/console state without a scenario-driven reason.
-
-## 7. Review routing
-
-Do not collapse independent review, but only run the reviewer that the change requires.
+For substantial orchestrated tasks, report resource choices compactly when useful:
 
 ```text
-visual/composition/style changed
-→ visual review
-
-interaction/state/navigation/form/async/runtime integration changed
-→ runtime review
-
-both changed meaningfully
-→ both reviews
-
-neither changed
-→ neither UI reviewer
-```
-
-A reviewer may still be required by a project-specific gate; project authority wins.
-
-## 8. Evidence reuse
-
-Do not rerun expensive evidence against an unchanged candidate just because a new phase started.
-
-If the candidate changes:
-
-1. identify the affected evidence;
-2. rerun only what the change invalidated;
-3. rerun broader verification only when impact is unclear.
-
-A specialist PASS is evidence for its bounded concern, not product completion.
-
-## 9. Concurrency test
-
-Before starting another expensive context, ask:
-
-```text
-Will this work proceed independently now?
-Will it shorten the critical path?
-Is ownership non-overlapping?
-Is the required context compact?
-Is the expected value greater than context/orchestration overhead?
-```
-
-If any answer is materially no, queue the work instead of running it concurrently.
-
-## 10. Stop conditions
-
-End a specialist when it has returned its contract.
-
-End or compact the main context when the current workstream has reached a stable handoff and the next task is unrelated.
-
-Do not keep background/loop agents alive without a current required responsibility.
-
-## 11. Reporting
-
-For substantial orchestrated tasks, the main owner may report resource choices compactly when useful:
-
-```text
-Orchestration: single-owner | owner + <n> specialists
-Specialists: <purpose only>
+Owner: premium reasoning
+Offload: <work class> -> <prepaid | low-cost API>
+Workers: <count + purpose>
 Review: visual | runtime | both | N/A
 Evidence reused: <yes/no + what>
+Escalations: <none | reason>
 ```
 
-Resource optimization must never be used to justify skipping a required safety, business, release, or acceptance gate.
+Never expose private chain-of-thought. Report decisions, evidence, and routing rationale only.
+
+Resource optimization must never justify skipping a required safety, business, release, or acceptance gate.
