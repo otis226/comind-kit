@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Reviewer verdict",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "summary", "evidence"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "BLOCKED"],
+      "description": "BLOCKED when required evidence could not be collected. Never PASS without evidence."
+    },
+    "summary": {
+      "type": "string",
+      "description": "One paragraph stating what was reviewed and why the verdict holds."
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Concrete artifacts backing the verdict. Empty is only valid for BLOCKED.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "detail"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["screenshot", "console", "network", "dom", "command", "file", "observation"]
+          },
+          "detail": { "type": "string" },
+          "path": { "type": "string" }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "description"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["blocker", "major", "minor", "nit"] },
+          "description": { "type": "string" },
+          "location": { "type": "string" }
+        }
+      }
+    },
+    "notVerified": {
+      "type": "array",
+      "description": "Anything in scope that could not be checked. Must be non-empty when verdict is BLOCKED.",
+      "items": { "type": "string" }
+    }
+  }
+}
