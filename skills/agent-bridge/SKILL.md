@@ -1,201 +1,284 @@
 ---
 name: agent-bridge
 description: >-
-  Run an existing agent definition on a different coding CLI (SDK backend) instead of the native runtime, choosing the backend and model per call. Use when a subagent should execute on another vendor's CLI for an independent second opinion, for a capability the native runtime lacks, or to pin a specific model, and when adding or swapping such a backend later should be a configuration change rather than a rewrite.
+  Run a configured agent or workflow skill on an external coding runtime. Use deterministic worker profiles to map each role to a runtime, endpoint, model, and credential source without asking the orchestrator to infer model cost.
 ---
 
 <!-- comind-managed-skill: agent-bridge -->
 
 # Agent Bridge
 
-Run any agent definition on a non-native SDK backend.
+Use Agent Bridge when a bounded worker should run outside the main owner's native model/runtime.
 
-One invocation shape covers every combination:
-
-```text
-<agent>  <sdk>  [model]  <scope>
-```
-
-The agent definition stays the single source of truth. The bridge reads it, inlines the
-Agent Skills it declares, derives its capability boundary, and replays that contract on the
-chosen backend. Nothing is duplicated per backend.
+The architecture is deliberately deterministic:
 
 ```text
-AGENT DEFINITION IS THE PORTABLE CONTRACT
-CAPABILITY IS DECLARED, NOT ASSUMED
-NEVER INHERIT AN AMBIENT SANDBOX OR MODEL
-PROBE ENVIRONMENT-DEPENDENT CAPABILITY BEFORE WORK
-NO EVIDENCE CAPABILITY -> BLOCKED, NOT A PROSE VERDICT
+main owner decides WHEN to offload
+        ↓
+worker-profiles.yaml decides WHICH worker runs the role
+        ↓
+agent-bridge resolves and executes the configured profile
+        ↓
+compact result returns to the owner
 ```
 
-## 1. Parse the invocation
+Core rules:
 
-Apply these rules in order. They are deterministic; do not guess.
+```text
+CONFIG DECIDES THE WORKER
+DO NOT INFER COST FROM MODEL NAMES
+NO SECRET VALUES IN YAML
+NO REPOSITORY-CONTROLLED CONFIG AUTO-LOAD
+EXPLICIT MODEL AND EXECUTION BOUNDARY
+NO REQUIRED CAPABILITY -> BLOCKED
+NO MAPPING -> NATIVE
+```
 
-| Token | Rule |
-|---|---|
-| 1 | Agent name. Required. |
-| 2 | Backend if it matches a known sdk id, otherwise the backend is `claude` and this token begins the scope. |
-| 3 | Model, only when token 2 was a backend and token 3 is not scope-like. Otherwise the backend's pinned default applies. |
-| rest | Scope: free text describing the task, the surface to inspect, and any preconditions. |
+## 1. Worker config
 
-An agent name may instead be written `skill:<name>` to anchor the run on a workflow skill
-(section 8).
+Default config location:
 
-If the agent name is missing, ask for it. Everything else has a defined default.
+```text
+$XDG_CONFIG_HOME/comind/worker-profiles.yaml
+```
 
-## 2. Route
+or, when `XDG_CONFIG_HOME` is unset:
 
-| Backend | Action |
-|---|---|
-| `claude` (default) | Spawn the agent natively with the Agent tool. Do not shell out. Its pinned model, effort, and tool restrictions apply unchanged. |
-| anything else | One `Bash` call to `dispatch.mjs` in this skill directory. |
+```text
+~/.config/comind/worker-profiles.yaml
+```
 
-Native routing is not a fallback; it is the correct path when no other backend was requested.
-Bridging exists to reach a different vendor, not to replace the native runtime.
+Override with:
 
-## 3. Dispatch
+```text
+AGENT_BRIDGE_WORKER_CONFIG=/path/to/worker-profiles.yaml
+```
+
+or per invocation:
+
+```text
+--worker-config /path/to/worker-profiles.yaml
+```
+
+A project/repository `.comind/worker-profiles.yaml` is intentionally not auto-loaded. A repository must not be able to redirect its own source or evidence to an arbitrary external endpoint. Pass a project-owned config explicitly only when you trust it.
+
+Start from `worker-profiles.example.yaml`.
+
+## 2. Config shape
+
+The file maps roles to named profiles:
+
+```yaml
+version: 1
+
+profiles:
+  ui-review:
+    runtime: claude-code
+    model: third-party-model-id
+    base_url: https://gateway.example.com
+    api_key_env: UI_REVIEW_TOKEN
+    readonly: true
+    max_turns: 16
+
+  runtime-review:
+    runtime: grok
+    model: grok-4.6
+    readonly: true
+    needs_browser: true
+
+agents:
+  ui-visual-reviewer: ui-review
+  ui-runtime-reviewer: runtime-review
+
+skills:
+  product-ui-critique: ui-review
+```
+
+The parser intentionally accepts a constrained map-only YAML subset: two-space indentation, maps, and scalar values. Lists, anchors, tags, and multiline YAML are not part of this configuration contract.
+
+## 3. Profiles
+
+Supported common profile fields:
+
+- `runtime`: `claude-code`, `grok`, `codex`, or another enabled direct backend.
+- `model`: explicit model ID/alias for that runtime or gateway.
+- `effort`: optional runtime reasoning-effort value.
+- `readonly`: `true`, `false`, `yes`, `no`, or `auto` semantics.
+- `max_turns`: bounded turn limit.
+- `needs_browser`: require verified browser evidence capability.
+- `base_url`: non-secret Claude Code gateway endpoint.
+- `api_key_env`: environment variable holding the profile credential.
+- `api_key_mode`: `auth-token` (default) or `api-key` for Claude Code gateways.
+- `env`: additional non-secret environment values.
+- `env_from`: map target environment variable -> source secret environment variable.
+
+Do not store an `api_key` value in YAML. Agent Bridge rejects it. It also rejects literal `env` keys whose names look like credentials (`KEY`, `TOKEN`, `SECRET`, `PASSWORD`, `CREDENTIAL`). Use `api_key_env` or `env_from` instead.
+
+Example:
+
+```yaml
+profiles:
+  ui-review:
+    runtime: claude-code
+    model: model-via-agentrouter
+    base_url: https://router.example/v1
+    api_key_env: AGENTROUTER_UI_TOKEN
+    env:
+      SOME_NON_SECRET_FLAG: enabled
+    env_from:
+      CUSTOM_GATEWAY_SECRET: ANOTHER_LOCAL_SECRET
+```
+
+The resolved secret value is passed only in the worker process environment. Dry-run/result metadata must not expose it.
+
+## 4. Routing precedence
+
+Use deterministic precedence:
+
+```text
+explicit --sdk
+→ direct legacy bridge; bypass profile routing
+
+explicit --profile
+→ use that configured profile
+
+agents.<agent>
+→ mapped profile
+
+skills.<skill>
+→ mapped profile
+
+no mapping
+→ NATIVE
+```
+
+`NATIVE` is not an error. It tells the main owner to use the runtime's normal native subagent/context for that role.
+
+An explicit CLI value such as `--model`, `--effort`, `--readonly`, or `--max-turns` overrides the selected profile for that invocation. Do not use overrides as hidden routing policy; they are for deliberate one-off experiments/debugging.
+
+## 5. Invocation
+
+Configured routing:
 
 ```bash
 node <skill-dir>/dispatch.mjs \
-  --agent <name> --sdk <backend> [--model <id>] [--effort <level>] \
-  --scope-file <path> \
-  [--needs-browser] [--schema <skill-dir>/verdict.schema.json] \
-  [--readonly auto|yes|no] [--cwd <dir>] [--max-turns <n>] [--raw]
+  --agent ui-visual-reviewer \
+  --scope-file /tmp/task.md \
+  --cwd /path/to/repo \
+  --schema <skill-dir>/verdict.schema.json
 ```
 
-Write the scope to a file and pass `--scope-file`. Inline `--scope` exists for one-liners only;
-a real task packet is long enough that argument-length limits become a portability hazard.
+Skill anchor:
 
-Agent definitions resolve project-first from `.claude/agents/` and `.grok/agents/`, walking up
-from `--cwd`, then from user-scope and installed plugin agent roots. Nearest project scope wins.
-Use `--agent-file` when an explicit definition must override normal resolution.
+```bash
+node <skill-dir>/dispatch.mjs \
+  --skill product-ui-critique \
+  --scope-file /tmp/task.md \
+  --cwd /path/to/repo
+```
 
-Return the dispatcher's stdout to the caller. Do not summarize away the evidence it carries,
-and do not upgrade a `BLOCKED` result into a pass because the prose sounded confident.
+Explicit profile override:
 
-## 4. Caller obligations
+```bash
+node <skill-dir>/dispatch.mjs \
+  --agent ui-visual-reviewer \
+  --profile another-profile \
+  --scope-file /tmp/task.md
+```
 
-The dispatcher enforces what it can prove. These remain the caller's responsibility.
+Explicit direct backend remains supported for compatibility:
 
-**Declare browser need.** Pass `--needs-browser` whenever the task requires evidence from a
-running UI. Agent definitions do not announce this, and inferring it from prose is unreliable.
-An environment-dependent browser integration must pass its runtime probe before model work
-starts. The Grok backend currently probes the configured `chrome-devtools` MCP server with
-`grok mcp doctor` in the requested `--cwd`. Backends without a verified or successfully probed
-browser capability refuse the run instead of producing an unevidenced verdict.
+```bash
+node <skill-dir>/dispatch.mjs \
+  --agent reviewer --sdk grok --model grok-4.6 \
+  --scope-file /tmp/task.md
+```
 
-**Carry preconditions in the scope packet.** A bridged run starts with no session state. If the
-surface needs a running server, a signed-in session, seeded data, or a specific branch checked
-out, the scope must say so and say how. An isolated browser profile in particular starts with
-no cookies, so an authenticated surface needs its sign-in steps spelled out.
+## 6. Claude Code external workers
 
-**Apply the verdict schema for reviewer-type agents.** Pass `--schema` with the bundled
-`verdict.schema.json` so the result is a checkable object rather than an argument. `PASS` and
-`FAIL` require at least one evidence item; `BLOCKED` requires a non-empty `notVerified` list.
-Leave the schema off for open-ended work, where the natural return is prose.
+A `runtime: claude-code` profile launches a separate non-interactive Claude Code process with the configured gateway/model.
 
-**Serialize browser runs.** Two agents driving one browser interleave and corrupt each other's
-evidence. Dispatch them one at a time.
+Agent Bridge clears ambient main-owner Claude routing/auth/model variables before profile values are injected, including saved environment routes such as `ANTHROPIC_BASE_URL`, `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `CLAUDE_CODE_OAUTH_TOKEN`, and model override variables. This prevents a configured worker from accidentally consuming the main owner's route/quota.
 
-**Write a task packet, not a sentence.** The scope replaces the entire conversation the native
-subagent would have inherited:
+The worker receives:
+
+- explicit `--model`;
+- bounded `--max-turns`;
+- `--safe-mode`;
+- no session persistence;
+- fail-closed Claude Code sandbox settings;
+- the resolved agent definition and declared Agent Skills in the composed prompt;
+- structured schema when requested.
+
+Read-only workers use plan mode plus `Read,Grep,Glob`. Write-capable workers use `dontAsk`, a fail-closed sandbox, and an `Edit(./**)` allow rule anchored to the requested working directory. Claude Code's current permission model applies `Edit(path)` rules to built-in file-editing tools.
+
+Third-party gateway compatibility is configuration responsibility. Claude Code can be pointed at compatible gateways, but a gateway/model alias is not automatically proven compatible merely because it accepts an Anthropic-shaped endpoint. Treat a profile as usable only after that exact route has been exercised.
+
+Browser capability for external Claude Code workers is intentionally unverified in worker-profile v1. A profile/task with `needs_browser: true` returns `BLOCKED`; route runtime UI review to a backend whose browser integration is actually verified.
+
+## 7. Grok and Codex direct executors
+
+The previous direct dispatcher is retained as `dispatch-direct.mjs` and remains the execution path for Grok/Codex profiles and explicit `--sdk` calls.
+
+Its existing guarantees remain:
+
+- explicit model and sandbox;
+- read-only derivation/enforcement;
+- Grok browser runtime probe when required;
+- missing CLI/capability fails closed;
+- agent skill resolution before work;
+- reviewer schema support.
+
+The routing wrapper does not reimplement those backend semantics.
+
+## 8. Task packet and return budget
+
+A fresh worker does not inherit the main conversation. Give it minimum sufficient context:
 
 ```text
+ROLE / SKILL
 GOAL
-CANDIDATE / BRANCH / COMMIT
-EXACT SCOPE OR SURFACE
-PRECONDITIONS (how to run it, how to sign in, what data)
-ACCEPTANCE RULES
+CANDIDATE / SHA / WORKTREE
+EXACT SCOPE / ROUTE
+AUTHORITY / ACCEPTANCE RULES
+OWNERSHIP OR READ-ONLY BOUNDARY
 REQUIRED CHECKS
+CONTEXT BUDGET
+OUTPUT BUDGET
+ESCALATE WHEN
 RETURN CONTRACT
 ```
 
-## 5. What the dispatcher guarantees
+For reviewer workers, prefer `verdict.schema.json`. PASS/FAIL must be evidence-bearing; BLOCKED must state what could not be verified.
 
-Derived from the agent definition, not from the prompt:
+Do not return raw browser/tool transcripts when compact evidence locators are enough.
 
-- **Capability boundary.** An agent that disallows write tools, or allowlists tools without
-  them, runs read-only. The backend is told in its own vocabulary, and the prompt states the
-  boundary as well. For Grok, read-only runs use the native `read-only` sandbox plus removal of
-  edit, shell, and subagent escape paths; write-capable runs use the `workspace` sandbox.
-  `--readonly yes|no` overrides the derivation when a run genuinely differs.
-- **Explicit sandbox and model, always.** Every enabled backend invocation passes both explicitly,
-  so a run cannot silently inherit a permissive sandbox or a drifting model from interactive
-  user configuration. A backend without a pinned default model must receive `--model` or the
-  dispatcher refuses the run.
-- **Skills resolved or refused.** Skills declared by the agent are read from the installed skill
-  root and inlined. A missing skill fails the run rather than letting the backend improvise a
-  workflow of its own.
-- **Capability gate before work.** A missing CLI, a disabled backend, or a required browser whose
-  static declaration or runtime probe cannot establish capability returns `BLOCKED` before any
-  model is invoked.
+## 9. Caller behavior
 
-## 6. Result envelope
+The main owner/resource governor decides whether offload is worthwhile. It does not choose a different provider/model by estimating prices.
 
-JSON on stdout: which agent and definition file resolved, backend, model, whether the run was
-read-only, which skills were inlined, the backend exit code, and `result`. Use `--raw` to emit
-the backend's own output unwrapped.
+When Agent Bridge returns:
 
-Status values: `OK`, `BLOCKED`, `BACKEND_FAILED`, `ERROR`, `DRY_RUN`.
-Exit codes: `0` ok, `2` usage or resolution error, `3` blocked, `4` backend failure.
+```text
+NATIVE
+→ use the normal native subagent/context
 
-`--dry-run` prints the composed prompt and the exact argv without invoking the model backend.
-Capability preflights such as CLI presence and browser probes still run because a dry-run must
-not claim an impossible execution plan.
+OK
+→ consume the compact worker result
 
-## 7. Adding or changing a backend
+BLOCKED
+→ resolve the capability/config/credential blocker or escalate
 
-Edit the `BACKENDS` table at the top of `dispatch.mjs`: `bin`, `enabled`, `browser`,
-`defaultModel`, and a `build()` that maps the common context onto that CLI's flags. Nothing
-else in the skill changes, and no caller changes.
+BACKEND_FAILED
+→ inspect the bounded failure; retry/escalate according to policy
+```
 
-Set `browser` honestly. A static `verified` value is only appropriate for capability that is
-truly part of the backend itself. Environment-dependent integrations should use a runtime probe
-instead; `unverified` or `none` must fail closed when `--needs-browser` is requested. An
-optimistic browser declaration defeats the mechanism that prevents unevidenced reviewer passes.
+Do not silently fall back from a configured external profile to a different paid provider. The mapping is user intent.
 
-Every enabled backend must map read-only/write-capable execution onto a real backend boundary,
-and every invocation must pass an explicit model. Do not rely on a vendor's interactive global
-config for either property.
+## 10. Limits
 
-Ship a new backend disabled until its CLI is installed and its path has actually been exercised.
-
-## 8. Bridging a skill instead of an agent
-
-A workflow skill can be the anchor of a run: pass `--skill <name>` instead of `--agent`.
-The skill body becomes the operating contract, exactly as an agent definition would. In the
-invocation grammar, mark it explicitly — `skill:<name>` — because the same name can exist both
-as an agent and as a skill, and guessing between them is not resolution.
-
-Skills resolve from project scope first: `.claude/skills/<name>/SKILL.md`, walking up from
-`--cwd`, then the installed user-scope roots. A workflow that lives beside the repository it
-operates on is found without configuration.
-
-Two consequences follow from a skill having no capability metadata:
-
-- **No declared boundary means write-capable.** An agent definition can disallow write tools; a
-  skill cannot. Skill-anchored runs default to write-capable, which is usually right for a
-  workflow, and `--readonly yes` is available when it is not.
-- **Enforcement that lives in the native runtime does not travel.** Guard rails implemented as
-  runtime hooks stay behind: a backend that does not run them cannot enforce them, so a rule
-  the workflow relies on degrades from a mechanism into an instruction the model may or may not
-  follow. Before bridging a workflow, ask what stops it from doing the wrong thing. If the
-  answer is a hook rather than the workflow text, keep that workflow native.
-
-Weigh destructiveness the same way. A workflow that only reads, builds, and reports is a safe
-first bridge. One that merges, deletes branches, or removes working trees should stay native
-until the bridged path has been exercised on the safe one.
-
-References between skills degrade gracefully: a bridged workflow that cites another skill by
-path reads it from the repository like any other file.
-
-## 9. Limits
-
-- An agent with no definition file cannot be bridged; pass `--agent-file` explicitly.
-- A successful browser preflight proves the configured integration was reachable at dispatch
-  time, not that every later UI interaction will succeed. If required evidence still cannot be
-  collected, the reviewer must return `BLOCKED`.
-- The bridge replays a contract; it cannot grant a backend a tool that backend does not have.
-- Vendor CLIs change their flags and safety semantics. When a backend starts failing, check its
-  current CLI contract before assuming the agent contract regressed.
+- Configured routing does not prove the third-party model is good enough; the user controls mappings and can change them.
+- A successful CLI launch does not prove every later tool interaction succeeds.
+- Runtime-specific hooks that are not part of the inlined Agent Skill contract do not automatically travel across runtimes.
+- Destructive release/deploy/credential/database operations should stay on explicitly trusted project-approved paths.
+- Keep the config user-owned; secrets remain outside YAML.

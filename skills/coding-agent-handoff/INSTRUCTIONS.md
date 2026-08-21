@@ -2,47 +2,46 @@
 
 ## Purpose
 
-Use this workflow when preparing a prompt or handoff for Claude Code, Cursor, Codex, or another coding harness to implement a reviewed task.
+Use this workflow for non-trivial coding handoff/orchestration when one owner may delegate bounded implementation, inspection, or review to specialist workers.
 
-It standardizes four things:
+It standardizes:
 
-1. resolve the correct project/source before coding;
-2. resolve design authority before user-visible UI implementation;
-3. use main-agent → vertical subagents → final integration only when the task benefits from decomposition;
-4. keep model, context, browser/MCP, and concurrency cost proportional to the work.
-
-This is workflow policy, not a project-specific business rule.
+1. project/source resolution before coding;
+2. design authority before user-visible UI changes;
+3. ownership and vertical slicing before parallel mutation;
+4. deterministic worker routing through user configuration;
+5. minimum sufficient worker context and compact returns;
+6. final integration and affected verification.
 
 ```text
 PROJECT TRUTH BEFORE CODE
 DESIGN AUTHORITY BEFORE UI CODE
+OWNER DECIDES WHEN TO DELEGATE
+CONFIG DECIDES WHICH WORKER RUNS THE ROLE
 OWNERSHIP BEFORE PARALLEL WRITES
-FAN-OUT IS EARNED, NOT DEFAULT
-MINIMUM SUFFICIENT SUBAGENT CONTEXT
-VERTICAL SUBAGENTS, NOT LAYER SUBAGENTS
-MAIN AGENT OWNS INTEGRATION
+MINIMUM SUFFICIENT WORKER CONTEXT
+COMPACT EVIDENCE BACK TO OWNER
+MAIN OWNER INTEGRATES
 ```
 
-Use `llm-resource-governor` whenever the handoff may spawn subagents, accumulate large context, use browser/MCP-heavy evidence, or run multiple expensive model contexts.
+Apply `llm-resource-governor` whenever delegation may save meaningful premium-owner quota or isolate review/evidence work.
 
-## 1. Resolve project and source
+## 1. Resolve project/source
 
-Before implementation, the main coding agent should:
+Before implementation, the owner must:
 
-1. read the current repository instructions;
-2. identify the actual repository, surface, and flow in scope;
-3. inspect the current working tree/HEAD when a workspace exists;
-4. resolve relevant business, product, API, security, and lifecycle sources;
-5. avoid resetting to a historical snapshot merely because an older review used it;
-6. report a blocker only when material ambiguity cannot be resolved from available authority.
+- read current repository instructions;
+- identify the actual repository/surface/flow in scope;
+- inspect current working tree/HEAD when relevant;
+- resolve current business/product/API/security/lifecycle authority;
+- avoid using stale historical snapshots as current truth;
+- report BLOCKED only when material ambiguity cannot be resolved from available authority.
 
-Prefer repository names and relative paths over machine-specific absolute paths.
+Prefer repository-relative paths, SHAs, issue/PR identifiers, and exact source locators over copied transcripts.
 
 ## 2. Resolve UI design authority
 
-For user-visible UI work, use `ui-design-authority` or apply the same protocol.
-
-Classify the task as:
+For user-visible UI work, apply `ui-design-authority` and classify the surface:
 
 ```text
 REFERENCE_BACKED
@@ -51,93 +50,95 @@ PRODUCT_DERIVED
 GREENFIELD
 ```
 
-### REFERENCE_BACKED
+An exact accepted reference governs parity only where proven. Business/lifecycle/security truth still comes from current project authority.
 
-When an exact accepted design/reference is the acceptance target, resolve affected surfaces/states, exact source/entrypoints, relevant imported source/style bundles, corresponding production routes/components, and provenance when needed.
+Do not let a coding worker invent a new visual language merely because no exact screen exists.
 
-Do not hand off vague instructions such as "match the design" when the exact source can be resolved.
+## 3. Main owner responsibility
 
-If several plausible references remain genuinely ambiguous after inspection, return `BLOCKED` instead of choosing one arbitrarily.
+One main owner remains accountable for:
 
-### SYSTEM_BACKED / PRODUCT_DERIVED / GREENFIELD
+- source/design/business authority;
+- risk and scope;
+- decomposition/ownership;
+- architecture and shared contracts;
+- fan-out decisions;
+- integration/conflict resolution;
+- combined verification;
+- final handoff state.
 
-Do not invent a fake parity target when no exact accepted reference exists.
+Bounded workers execute clearly scoped work. They do not become independent owners of shared architecture.
 
-Create or obtain a compact Design Manifest covering authority mode, canonical inputs, inherited/derived conventions, new proposals, allowed freedom, do-not-deviate constraints, and review baseline.
+## 4. Deterministic worker routing
 
-For meaningful PRODUCT_DERIVED or GREENFIELD work, or a substantial new SYSTEM_BACKED composition, prefer an independent read-only `ui-design-architect` pass when the runtime supports it.
+Do not choose worker provider/model by estimating price from names.
 
-## 3. Design is not business truth
+Use this boundary:
 
-A design/reference governs visual and interaction intent only within its proven scope. Lifecycle, permissions, API contracts, security, and business invariants still come from current project authority.
+```text
+llm-resource-governor
+= WHEN offload is valuable / WHEN escalation is required
 
-Do not turn seed data, fake IDs, mock routing, or prototype-only states into production rules.
+worker-profiles.yaml
+= WHICH runtime + model + endpoint + credential source runs each agent/skill
 
-## 4. Main-agent ownership
+agent-bridge
+= HOW the configured profile is executed/enforced
+```
 
-When subagents are available, one main agent remains accountable for project/source resolution, design authority, risk/scope, ownership/decomposition, fan-out decisions, shared wiring, specialist reports, final integration, and combined verification.
+Invoke the desired role by name through Agent Bridge. Avoid routine `--sdk`/`--model` overrides because they bypass configured user intent.
 
-Do not spawn write-capable subagents until source, surface, and ownership are clear enough.
+Handle route results:
+
+```text
+NATIVE
+→ spawn/use the normal native specialist
+
+OK
+→ consume compact result/evidence
+
+BLOCKED
+→ resolve configured credential/capability/config blocker or escalate
+
+BACKEND_FAILED
+→ inspect bounded failure; retry only when useful
+```
+
+Never silently switch a BLOCKED configured worker to another third-party provider.
 
 ## 5. Fan-out gate
 
-Do not spawn a subagent merely because the runtime supports subagents.
+Do not spawn a worker just because the runtime supports it.
 
-Default policy:
+### FAST
 
 ```text
-FAST
-→ main owner only
-
-STANDARD
-→ main owner + up to 2 concurrent specialists
-
-HIGH_RISK
-→ prefer parallel investigation over parallel mutation
+owner only, or owner + one bounded worker when offload has clear value
 ```
 
-Exceed the default only when additional concurrency clearly shortens the critical path or reduces a concrete risk.
-
-Use parallel write subagents only when there are at least two meaningfully independent vertical slices that can each perform:
+### STANDARD
 
 ```text
-inspect → plan → implement → targeted verification
+owner + up to two concurrent bounded workers
 ```
 
-Small, linear, or tightly coupled tasks should stay with the main agent.
+### HIGH_RISK
 
-## 6. Minimum sufficient context
+Prefer parallel investigation over parallel mutation. Keep destructive/shared mutation centralized.
 
-A fresh subagent should not inherit the main conversation by default.
+Parallel work must be independently executable, have non-overlapping ownership, and produce compact results.
 
-Pass a compact task packet:
+## 6. Vertical slices
 
-```text
-ROLE / SKILL
-GOAL
-CANDIDATE / SHA / WORKTREE
-EXACT SCOPE OR ROUTE
-RELEVANT AUTHORITY / ACCEPTANCE RULES
-OWNERSHIP OR READ-ONLY BOUNDARY
-REQUIRED CHECKS / SCENARIOS
-RETURN CONTRACT
-```
-
-Prefer exact paths, links, SHAs, issue/PR identifiers, and concise authority summaries over copied transcripts, old browser traces, or broad project dumps.
-
-When per-agent model selection exists, explicitly choose a cheaper capable tier for bounded specialists instead of silently inheriting the main owner's strongest model. Escalate only when the specialist task itself contains material ambiguity, high-risk reasoning, or repeated failure indicating the cheaper tier is insufficient.
-
-## 7. Vertical slices, not technical layers
-
-Good:
+Prefer complete slices:
 
 ```text
-Slice A = Documents
-Slice B = Activity
+Slice A = Documents flow
+Slice B = Activity flow
 Slice C = Edit flow
 ```
 
-Avoid:
+Avoid layer fan-out:
 
 ```text
 Agent A = React
@@ -145,126 +146,162 @@ Agent B = CSS
 Agent C = Tests
 ```
 
-Do not let multiple writers mutate the same shared parent, API/state region, or styling surface without explicit isolation and ownership.
+Do not let several write workers mutate the same shared parent/API/state/style region without explicit isolation.
 
-## 8. Ownership map
+## 7. Ownership map
+
+Before parallel mutation, define:
 
 ```text
-Slice A — <goal>
-Owns:
-- <components/files/logic boundary>
-Tests/verify:
-- <targeted checks>
-Shared dependencies:
-- <read-only or integration-needed>
+SLICE: <goal>
+OWNS:
+- exact files/components/logic boundary
 
-Main / Final Integration owns:
-- shared parent
-- shared API/state wiring
-- shared design-system/token changes
+VERIFY:
+- targeted checks
+
+SHARED DEPENDENCIES:
+- read-only / integration-needed
+
+MAIN OWNER OWNS:
+- shared parent/wiring
+- shared API/state contracts
+- shared design-system changes
 - cross-slice regression
 ```
 
-## 9. Subagent return contract
+## 8. Worker task packet
+
+A worker must not inherit the entire owner conversation by default.
+
+Send:
 
 ```text
-SLICE: <name>
+ROLE / SKILL
+GOAL
+CANDIDATE / SHA / WORKTREE
+EXACT SCOPE / ROUTE
+RELEVANT AUTHORITY / ACCEPTANCE RULES
+OWNERSHIP OR READ-ONLY BOUNDARY
+REQUIRED CHECKS / SCENARIOS
+CONTEXT BUDGET
+OUTPUT BUDGET
+ESCALATE WHEN
+RETURN CONTRACT
+```
+
+Context budget example:
+
+```text
+Start from the named files/routes only.
+Follow imports/callers only when needed.
+Do not scan unrelated modules.
+Do not copy source text unless it is material evidence.
+```
+
+## 9. Worker output contracts
+
+Implementation worker:
+
+```text
 STATUS: COMPLETE | BLOCKED
-
 Implemented:
-- ...
-
+- compact bullets
 Files changed:
-- ...
-
-Tests / targeted verification:
-- <check> — PASS/FAIL
-
+- exact paths
+Verification:
+- command/check — PASS/FAIL
 Shared integration needed:
-- ... | NONE
-
-Assumptions / blockers:
-- ... | NONE
+- value | NONE
+Assumptions/blockers:
+- value | NONE
 ```
 
-End the specialist after it returns this contract. Do not leave background/loop agents alive without a current responsibility.
+Reviewer worker should use an evidence-bearing structured verdict when available. Keep summary/findings bounded; do not return chain-of-thought or large raw transcripts.
 
-## 10. Final integration
+End the worker after it returns its contract.
 
-```text
-collect reports
-→ inspect combined diff/current tree
-→ resolve shared wiring/conflicts
-→ verify source/design-authority coverage
-→ reuse still-valid evidence from the unchanged candidate
-→ run affected cross-slice regression
-→ run only required visual/runtime/business verification
-→ fix integration defects
-→ continue candidate/ship workflow
-```
+## 10. UI review routing
 
-Local slice PASS does not imply feature PASS.
-
-If the candidate changes, identify which evidence was invalidated and rerun only that evidence unless the impact is unclear.
-
-## 11. Browser and reviewer discipline
-
-Treat browser/MCP-heavy reviewers as short-lived evidence workers.
-
-Give them the exact candidate, route/state/fixture, required scenarios, runtime-health checks, relevant authority, and verdict contract. They should collect only scenario-relevant evidence, return a concise verdict, then end.
-
-Before launching an independent reviewer whose proof depends on the live UI, preflight that review context's browser capability. If the required browser tool is permission-gated, resolve the permission when authorized and rerun the blocked reviewer. Never substitute the implementer or parent session's browser pass for a required independent reviewer pass.
-
-Route UI reviewers by the actual change:
+Choose reviewer role by actual change:
 
 ```text
-visual/composition/style changed
-→ visual review
+visual/composition/style
+→ ui-visual-reviewer
 
-interaction/state/navigation/form/async/runtime integration changed
-→ runtime review
+interaction/state/navigation/form/async/runtime
+→ ui-runtime-reviewer
 
-both changed meaningfully
-→ both reviews
+both materially changed
+→ both reviewers
 
-neither changed
+neither
 → neither UI reviewer
 ```
 
-Project-specific mandatory gates override this routing.
+The worker config decides which model/runtime runs those roles.
 
-## 12. Machine resource governor
+If browser evidence is required, the mapped worker must have verified browser capability. BLOCKED evidence may not be replaced by implementer intuition.
 
-Do not run multiple heavy/E2E suites concurrently merely because several agents exist. Slices should run targeted checks; final integration runs combined concerns through the project's machine-resource scheduling policy when one exists.
+## 11. Final integration
 
-Machine CPU/RAM scheduling and LLM/context governance solve different problems; apply both when relevant.
+After delegation:
 
-## 13. Prompt author contract
+```text
+collect compact worker reports
+→ inspect combined diff/current candidate at required risk level
+→ resolve shared wiring/conflicts
+→ verify authority/acceptance coverage
+→ reuse still-valid evidence
+→ rerun only invalidated/affected checks
+→ run required visual/runtime/business verification
+→ fix integration defects
+→ continue ship/handoff workflow
+```
 
-Coding-agent prompts should be English unless the user explicitly requests another language.
+Worker PASS is evidence for a bounded concern, not feature completion.
 
-A non-trivial handoff should include the relevant parts of:
+## 12. Evidence reuse
+
+Do not rerun expensive evidence on an unchanged candidate just because the workflow phase changed.
+
+When candidate changes:
+
+1. identify invalidated evidence;
+2. rerun only affected evidence;
+3. broaden only when blast radius is unclear.
+
+## 13. Escalation
+
+Escalate to the owner when:
+
+- authority is materially ambiguous;
+- architecture/shared contracts/security/lifecycle/destructive behavior are implicated;
+- the configured worker lacks required capability/credential;
+- independent workers materially disagree;
+- verification repeatedly fails;
+- worker scope must expand across ownership boundaries;
+- confidence is insufficient for a high-severity decision/mutation.
+
+Second opinions are earned, not automatic.
+
+## 14. Prompt author contract
+
+Coding-agent prompts should be English unless the user asks otherwise.
+
+A substantial handoff should include relevant sections:
 
 ```text
 GOAL
-CURRENT PRODUCT/BUSINESS GUARDRAILS
-PHASE 0 — PROJECT/SOURCE RESOLUTION
+CURRENT AUTHORITY / BUSINESS GUARDRAILS
+PROJECT/SOURCE RESOLUTION
 UI DESIGN AUTHORITY
-ORCHESTRATION / RESOURCE BUDGET
+ORCHESTRATION / OWNERSHIP
+WORKER ROUTING (role names, not guessed providers)
+CONTEXT / OUTPUT BUDGET
 IMPLEMENTATION SCOPE
 VERIFICATION / DONE CRITERIA
 DO NOT / GUARDRAILS
 ```
 
-Do not micromanage implementation when the coding agent can inspect source, but do not replace hard acceptance gates with vague prose.
-
-```text
-The main agent coordinates the work.
-Resolve what is authoritative before generating new behavior or UI.
-Fan-out is earned, not default.
-Each subagent gets minimum sufficient context and owns a complete vertical slice.
-Use cheaper capable specialist models when the runtime supports explicit selection.
-Subagents report back and end; the main agent integrates.
-Do not parallelize ownership conflicts.
-Do not keep browser-heavy reviewer contexts alive after their verdict.
-```
+Do not skip quality/safety/business/release gates to save quota.
