@@ -7,10 +7,11 @@ Thanks for improving CoMind Kit.
 Contributions should keep the toolkit:
 
 - project-neutral and portable;
-- English-first for reusable skill and agent instructions;
+- English-first for reusable runtime instructions;
 - explicit about evidence, authority, uncertainty, and verification;
 - free of secrets, private project knowledge, private repository paths, and machine-specific assumptions;
-- compatible with the Agent Skills package model.
+- compatible with the Agent Skills package model;
+- free of duplicate runtime-specific workflow sources.
 
 ## Skill structure
 
@@ -22,36 +23,26 @@ skills/<name>/
 └── INSTRUCTIONS.md   # optional
 ```
 
-`SKILL.md` is the runtime entrypoint. If a longer workflow is needed, keep it in `INSTRUCTIONS.md` and have `SKILL.md` load it.
+`SKILL.md` is the runtime entrypoint. A longer `INSTRUCTIONS.md` remains part of the same canonical package.
 
-Reference sibling capabilities by **skill name**, for example `design-parity` or `runtime-regression`. Do not introduce legacy flat references such as `skills/design-parity.md`.
+Reference sibling capabilities by installed skill name such as `design-parity` or `runtime-regression`. Do not introduce legacy flat references.
 
-## Agent structure
-
-Claude Code specialist agents live under `agents/` and should remain thin adapters over canonical skills. Do not duplicate the full workflow into an agent definition.
+The skill is the role. Do not add permanent Claude/Cursor-specific specialist agent wrappers. Use a fresh native context or deterministic `agent-bridge` worker profile when isolation/external execution is needed.
 
 ## Pull requests
 
-Keep each PR focused. Include:
+Keep each PR focused. Include the problem, affected skills, behavior/output-contract changes, verification, and compatibility impact.
 
-- the problem being solved;
-- affected skills/agents;
-- behavior or output-contract changes;
-- verification performed;
-- any compatibility impact.
-
-If the change affects public behavior, update `README.md` and `CHANGELOG.md` when appropriate.
+If public behavior changes, update `README.md` and `CHANGELOG.md`.
 
 ## Validation
-
-Run the static validator locally:
 
 ```bash
 node scripts/validate-public.mjs
 ```
 
-GitHub Actions runs the same validator and then performs a real installation smoke test against the current checkout with the pinned `skills@1.5.22` CLI. The smoke test installs all public skills into a temporary Claude Code project and verifies that every expected `SKILL.md` is discoverable after installation.
+GitHub Actions also performs an installation smoke test with the pinned Agent Skills CLI.
 
 ## Breaking changes
 
-Treat renaming/removing a skill or agent, changing a documented verdict/output contract, or materially changing orchestration semantics as a breaking public API decision. Prefer deprecation/migration guidance when practical.
+Treat renaming/removing a skill, changing a documented verdict/output contract, or materially changing orchestration semantics as a breaking public API decision. Prefer explicit migration guidance when practical.

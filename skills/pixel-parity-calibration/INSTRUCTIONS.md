@@ -12,12 +12,7 @@ Acceptance evidence must identify the product state it actually exercised.
 
 If a browser renders a committed SHA plus dirty WIP, screenshots may be used for diagnosis but must not be reported as PASS evidence for the clean committed SHA.
 
-Before acceptance:
-
-1. commit the proven changes; or
-2. deliberately remove unneeded experimental changes and recapture.
-
-Never reset/delete a dirty worktree blindly.
+Before acceptance, either commit the proven changes or deliberately remove unneeded experimental changes and recapture. Never reset/delete a dirty worktree blindly.
 
 ## 2. Residual classes
 
@@ -31,12 +26,7 @@ fix product → targeted verify → commit → recapture
 
 ### B — Intentional product/design delta
 
-A valid capability/product decision differs from the exact reference.
-
-- document the delta;
-- split a stable comparable region when useful;
-- keep exclusions/masks minimal, deterministic, and predeclared;
-- never mask Class A.
+A valid capability/product decision differs from the exact reference. Document the delta, keep exclusions/masks minimal and deterministic, and never mask Class A.
 
 ### C — Fixture/cardinality/literal-data mismatch
 
@@ -66,28 +56,13 @@ Do not reuse an old mismatch ratio after product, fixture, crop, or capture cond
 
 ## 4. Sub-crop / exclusion
 
-An exclusion is valid only when:
-
-- whole-surface Structural Visual already PASSes;
-- the excluded area is a documented Class B or non-owned Class E region;
-- it contains no known Class A defect;
-- configuration is deterministic and reviewer-accessible;
-- the report states what is excluded and why;
-- semantic/interaction/business concerns still cover product-owned behavior in that area.
+An exclusion is valid only when whole-surface Structural Visual already PASSes, the excluded area is a documented Class B or non-owned Class E region, it contains no known Class A defect, configuration is deterministic/reviewer-accessible, and semantic/interaction/business concerns still cover product-owned behavior.
 
 ## 5. Threshold discipline
 
-A threshold is meaningful only after comparable deterministic evidence has been calibrated.
+A threshold is meaningful only after comparable deterministic evidence has been calibrated. Do not increase a threshold merely because the current candidate fails.
 
-Do not increase a threshold merely because the current candidate fails.
-
-Recalibration requires:
-
-- Structural Visual PASS;
-- Class A = NONE;
-- C/D/E reasonably normalized;
-- B correctly documented/split;
-- repeated known-good captures that demonstrate baseline noise.
+Recalibration requires Structural Visual PASS, Class A = NONE, reasonable C/D/E normalization, correct B documentation/splitting, and repeated known-good captures demonstrating baseline noise.
 
 ## 6. Handoff
 

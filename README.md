@@ -1,261 +1,169 @@
 # CoMind Kit
 
-> **Reusable Agent Skills and specialist agents for building, reviewing, and shipping software with AI coding tools.**
+Reusable Agent Skills for engineering delivery, UI design/review, verification, shipping, and deterministic external-worker execution.
 
-![Public](https://img.shields.io/badge/repository-public-0f766e?style=flat-square)
-![MIT](https://img.shields.io/badge/license-MIT-2563eb?style=flat-square)
-![Agent Skills](https://img.shields.io/badge/Agent%20Skills-portable-4f46e5?style=flat-square)
-![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin%20%2B%20agents-d97706?style=flat-square)
-![Project Neutral](https://img.shields.io/badge/scope-project--neutral-111827?style=flat-square)
-
-CoMind Kit packages a practical software-delivery workflow into portable Agent Skills that can be installed into supported AI coding runtimes.
-
-It is **project-neutral by design**: the toolkit provides reusable workflows, while project-specific truth stays in the repository you are actually working on.
-
----
+CoMind Kit is project-neutral: project truth comes from the repository where the skills are used.
 
 ## Install
-
-Use the normal `skills` CLI flow:
 
 ```bash
 npx -y skills@1.5.22 add otis226/comind-kit
 ```
 
-That keeps the CLI defaults for scope, skill selection, target runtimes, and installation method.
+The canonical unit is an Agent Skill. CoMind Kit does not ship permanent specialist agent wrappers.
 
-> Start here unless you specifically need runtime targeting or Claude Code specialist agents.
-
----
-
-## What do you get?
-
-| Area | What it helps with | Main skills |
-|---|---|---|
-| 🧭 **Engineering delivery** | Understand the task, plan, implement, coordinate subagents, control orchestration cost, hand off | `senior-dev`, `coding-agent-handoff`, `llm-resource-governor` |
-| 🎨 **Product & UI** | Resolve design authority, critique UI, review visual quality | `ui-design-authority`, `ui-design-architect`, `product-ui-critique`, `ui-review`, `ui-visual-reviewer` |
-| 🧪 **Verification** | Runtime checks, regression decisions, design parity, evidence | `ui-runtime-reviewer`, `runtime-regression`, `design-parity`, `pixel-parity-calibration`, `evidence-transport` |
-| 🚢 **Finish & ship** | Final candidate checks, merge safety, cleanup | `finalize-workstream` |
-
-```mermaid
-flowchart LR
-    A[Task] --> B{What kind of work?}
-    B -->|Build / fix| C[senior-dev]
-    B -->|Design decision| D[ui-design-architect]
-    B -->|Visual review| E[ui-visual-reviewer]
-    B -->|Runtime behavior| F[ui-runtime-reviewer]
-    C --> G[Candidate]
-    D --> C
-    G --> E
-    G --> F
-    E --> H[Manual check]
-    F --> H
-    H --> I[finalize-workstream]
-```
-
----
-
-## Skills at a glance
-
-### 🧭 Build & orchestration
-
-| Skill | Use it when | What it does |
-|---|---|---|
-| `senior-dev` | A feature, refactor, or bug fix is non-trivial | Main delivery owner: inspect → plan → implement → verify → handoff |
-| `coding-agent-handoff` | Work can be split across coding agents | Defines vertical slices, ownership, return contracts, and final integration |
-| `llm-resource-governor` | Work may spawn subagents, carry large context, use browser/MCP heavily, or run costly model sessions | Keeps fan-out earned, specialist context minimal, model selection explicit, reviewers short-lived, and evidence reusable |
-| `finalize-workstream` | The candidate has been accepted and needs to ship | Resolves ship policy, merge safety, cleanup, and final status |
-
-### 🎨 Design & product UI
-
-| Skill | Use it when | What it does |
-|---|---|---|
-| `ui-design-authority` | Before meaningful UI implementation | Decides whether the work is reference-backed, system-backed, product-derived, or greenfield |
-| `ui-design-architect` | The UI needs an independent design-authority pass | Produces a compact Design Manifest without editing production code |
-| `product-ui-critique` | Reviewing an existing screen or screenshot | Diagnoses UX/visual/system issues while preserving what already works |
-| `ui-review` | Reviewing UI against a design/system/product language | Chooses the right review mode and prioritizes actionable gaps |
-| `ui-visual-reviewer` | After meaningful UI implementation | Independent PARITY / COHERENCE / DESIGN_QUALITY verdict |
-
-### 🧪 Runtime, parity & evidence
-
-| Skill | Use it when | What it does |
-|---|---|---|
-| `ui-runtime-reviewer` | UI behavior, state, navigation, forms, or async flows changed | Exercises the real candidate and returns PASS / FAIL / BLOCKED |
-| `design-parity` | An exact design/reference is an acceptance target | Verifies visual, structural, interaction, business, and regression concerns |
-| `pixel-parity-calibration` | Pixel mismatch remains after structural parity is close | Separates real product defects from fixture/clock/render noise |
-| `runtime-regression` | A candidate changed after a previous runtime PASS | Decides what evidence still carries forward and what must be rerun |
-| `evidence-transport` | Reviewers need screenshots, traces, reports, or diffs | Moves evidence to reviewable locations without polluting release history |
-
----
-
-## Runtime support
-
-| Runtime | Skills | Specialist agents |
-|---|---:|---:|
-| **Claude Code** | Yes | Optional plugin |
-| **Cursor** | Yes | Runtime-native handling |
-| **Codex** | Yes | Runtime-native handling |
-
-The portable skills are the canonical workflows. Runtime-specific agents are thin adapters, not separate sources of truth.
-
----
-
-## Claude Code specialist agents
-
-The same workflows can also be exposed as isolated Claude Code subagents.
-
-| Agent | Role | Typical use |
-|---|---|---|
-| `senior-dev` | Main engineering delivery owner | Own a substantial implementation from source inspection through handoff |
-| `ui-design-architect` | Read-only design authority specialist | Resolve UI direction before implementation when design freedom is unclear |
-| `ui-visual-reviewer` | Independent visual reviewer | Review the rendered candidate without trusting implementer rationale |
-| `ui-runtime-reviewer` | Independent runtime reviewer | Exercise interactions, state, forms, navigation, and runtime health |
-| `product-ui-critic` | Conservative product UI critic | Diagnose what should change — and explicitly preserve what should not |
-
-The agent definitions are intentionally thin. **The canonical workflow stays in the skills**, so behavior is not duplicated across runtimes.
-
----
-
-## Real workflows
-
-### 1. Build a feature or fix a bug
+## Core architecture
 
 ```text
 senior-dev
-  → inspect current repository truth
-  → classify risk and scope
-  → apply llm-resource-governor when orchestration is expensive
-  → implement directly or split vertical slices
-  → targeted verification
-  → visual/runtime review when relevant
-  → READY FOR MANUAL CHECK
+= main owner / architecture / integration
+
+llm-resource-governor
+= WHEN delegation is worthwhile
+
+coding-agent-handoff
+= WHAT the worker owns/receives/returns
+
+worker-profiles.yaml
+= WHICH runtime/model/API executes the role
+
+agent-bridge
+= HOW the configured external worker executes
+
+bounded-code-worker
+= bounded implementation execution
 ```
 
-### 2. Implement or improve a UI screen
+Do not map `senior-dev` to a cheap/external coding worker. Keep the main owner as the owner; map `bounded-code-worker` for implementation slices.
+
+## Main skills
+
+### Delivery and worker execution
+
+| Skill | Use it when |
+|---|---|
+| `senior-dev` | Non-trivial feature/refactor/bug fix needs one accountable owner |
+| `llm-resource-governor` | Delegation may save context/quota or isolate evidence work |
+| `coding-agent-handoff` | A worker needs explicit ownership, packet, dispatch, and return contract |
+| `bounded-code-worker` | One clear implementation/refactor slice should be delegated |
+| `agent-bridge` | A configured role should run on an external runtime/model/API |
+| `finalize-workstream` | An accepted candidate is ready for authorized merge/finalization |
+
+### Product UI
+
+| Skill | Use it when |
+|---|---|
+| `ui-design-authority` | Resolve reference/system/product-derived/greenfield design authority |
+| `ui-design-architect` | A fresh read-only design-authority pass is useful |
+| `product-ui-critique` | Diagnose an existing screen conservatively |
+| `ui-review` | Choose review mode and prioritize actionable gaps |
+| `ui-visual-reviewer` | Independent rendered visual verdict |
+| `ui-runtime-reviewer` | Independent interaction/runtime verdict |
+
+### Verification
+
+| Skill | Use it when |
+|---|---|
+| `design-parity` | Exact reference is an acceptance target |
+| `pixel-parity-calibration` | Residual pixel mismatch needs classification/calibration |
+| `runtime-regression` | Candidate changed after prior runtime evidence |
+| `evidence-transport` | Verification artifacts must be reviewer-accessible |
+
+## Optional deterministic external workers
+
+Create:
 
 ```text
-ui-design-authority
-  → ui-design-architect when design freedom is unclear
-  → senior-dev implementation
-  → ui-visual-reviewer
-  → ui-runtime-reviewer when behavior changed
-  → manual check
+~/.config/comind/worker-profiles.yaml
 ```
 
-### 3. Match an exact design/reference
+Start from `skills/agent-bridge/worker-profiles.example.yaml`.
+
+Example:
+
+```yaml
+version: 1
+
+profiles:
+  ui-cheap:
+    runtime: claude-code
+    model: your-third-party-model-id
+    base_url: https://gateway.example.com
+    api_key_env: UI_REVIEW_TOKEN
+    readonly: true
+
+  runtime-review:
+    runtime: grok
+    model: grok-4.6
+    readonly: true
+    needs_browser: true
+
+  coding:
+    runtime: codex
+    model: gpt-5.6-sol
+    readonly: false
+
+skills:
+  ui-visual-reviewer: ui-cheap
+  ui-runtime-reviewer: runtime-review
+  bounded-code-worker: coding
+```
+
+Keep real secrets out of YAML. `api_key_env` and `env_from` reference environment variables.
+
+The orchestrator chooses the role. Configuration chooses runtime/model/API. Agent Bridge does not guess model cost.
+
+## Routing precedence
 
 ```text
-design-parity
-  → structural visual comparison
-  → comparable-state check
-  → pixel comparison when required
-  → pixel-parity-calibration for residual noise
-  → runtime/business/regression evidence
-  → final verdict
+explicit --sdk
+→ direct debug/compatibility backend
+
+explicit --profile
+→ configured profile
+
+agents.<agent>
+→ project/user agent profile
+
+skills.<skill>
+→ canonical skill profile
+
+no mapping
+→ NATIVE
 ```
 
-Use exact parity only when an exact reference is genuinely an acceptance target. Do not create fake pixel gates for ordinary product-coherence work.
+Prefer `skills:` mappings for canonical CoMind roles. `agents:` is available for explicit project/user agent definitions.
 
----
+## Runtime notes
 
-## Optional runtime targeting
+- Claude Code external workers run as separate non-interactive processes with explicit gateway/model/credential binding and sandboxing.
+- External Claude Code browser capability is fail-closed until verified; route live browser review to a verified runtime.
+- Grok browser-required runs probe the configured browser integration before work.
+- Codex/Grok direct executors preserve explicit model/sandbox behavior.
+- A third-party compatible endpoint does not automatically prove every model supports Claude Code tools correctly; smoke-test the exact route.
 
-<details>
-<summary><strong>Claude Code only</strong></summary>
+## Native runtime targeting
+
+Claude Code only:
 
 ```bash
 npx -y skills@1.5.22 add otis226/comind-kit --agent claude-code
 ```
 
-</details>
-
-<details>
-<summary><strong>Cursor only</strong></summary>
-
-```bash
-npx -y skills@1.5.22 add otis226/comind-kit --agent cursor
-```
-
-</details>
-
-<details>
-<summary><strong>Claude Code + Cursor, all skills, global</strong></summary>
-
-```bash
-npx -y skills@1.5.22 add otis226/comind-kit --global --skill '*' --agent claude-code --agent cursor --yes
-```
-
-</details>
-
-<details>
-<summary><strong>Claude Code + Cursor + Codex, all skills, global</strong></summary>
+Claude Code + Cursor + Codex:
 
 ```bash
 npx -y skills@1.5.22 add otis226/comind-kit --global --skill '*' --agent claude-code --agent cursor --agent codex --yes
 ```
 
-</details>
+## Optional Claude Code plugin install
 
----
-
-## Optional: Claude Code plugin + specialist agents
-
-If you use Claude Code and want the specialist subagents in addition to the skills, run these commands **inside Claude Code**:
+The plugin is another distribution path for the same canonical skills; it does not add separate specialist workflows.
 
 ```text
 /plugin marketplace add otis226/comind-kit
 /plugin install comind-kit@otis-tools
 ```
-
-The plugin loads the same canonical skills plus the five specialist agents listed above.
-
----
-
-## How humans and AI should read this repo
-
-**Humans:** start with this README to understand what is available and which workflow fits the task.
-
-**AI maintainers:** start with `AGENTS.md` (Claude Code also sees `CLAUDE.md`). Installed runtimes use `SKILL.md`, optional `INSTRUCTIONS.md`, and runtime agent definitions as the operating instructions.
-
-```text
-README.md        → human orientation
-AGENTS.md        → repository maintenance rules for AI
-skills/*         → canonical reusable workflows
-agents/*         → Claude Code specialist adapters
-.claude-plugin/* → Claude Code distribution metadata
-```
-
----
-
-## Trust model
-
-CoMind Kit provides workflow instructions, not project truth.
-
-- Business rules, design decisions, API contracts, permissions, and release policy must come from the current project.
-- A skill should not invent project-specific facts just because a reusable workflow mentions that concern.
-- Review the repository before installing it into a sensitive environment, just as you would review any tool that can influence a coding agent.
-
----
-
-## Versioning
-
-Tagged releases follow Semantic Versioning. Before the first tag, `main` is the latest development line.
-
-For reproducible automation, pin a tagged release or commit once tags are available instead of implicitly tracking `main`. See `CHANGELOG.md` for public changes and compatibility notes.
-
----
-
-## Contributing & security
-
-Contributions are welcome. Read `CONTRIBUTING.md` before changing a skill or agent, and run:
-
-```bash
-node scripts/validate-public.mjs
-```
-
-For sensitive reports involving secrets, private-data leakage, unsafe instructions, or supply-chain concerns, follow `SECURITY.md` instead of opening a public issue.
-
----
 
 ## Repository structure
 
@@ -264,13 +172,25 @@ comind-kit/
 ├── README.md
 ├── AGENTS.md
 ├── CLAUDE.md
-├── skills/                 # portable canonical Agent Skills
-├── agents/                 # Claude Code specialist adapters
-├── scripts/                # public self-validation
-└── .claude-plugin/         # plugin + marketplace metadata
+├── skills/                 # canonical reusable Agent Skills
+├── scripts/                # public validation
+└── .claude-plugin/         # plugin/marketplace metadata
 ```
 
-## License
+## Trust model
+
+- Business rules, design decisions, API contracts, permissions, and release policy come from the active project.
+- Worker configuration is user-owned; repositories do not auto-control external routing.
+- Secrets remain outside worker-profile YAML.
+- AI review does not replace required product/user acceptance.
+
+## Validation
+
+```bash
+node scripts/validate-public.mjs
+```
+
+See `CHANGELOG.md`, `CONTRIBUTING.md`, and `SECURITY.md` for maintenance and compatibility guidance.
 
 MIT — see `LICENSE`.
 

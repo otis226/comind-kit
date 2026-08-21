@@ -20,26 +20,11 @@ If an accepted reference conflicts with a newer business or security invariant, 
 
 ### Pass A — Structural / visual port
 
-Verify:
-
-- hierarchy;
-- copy/labels;
-- grouping;
-- proportion;
-- spacing rhythm;
-- visual states;
-- action placement.
+Verify hierarchy, copy/labels, grouping, proportion, spacing rhythm, visual states, and action placement.
 
 ### Pass B — Production rewire
 
-Reconnect:
-
-- real APIs/state;
-- permission/domain gates;
-- loading/error/empty states;
-- audit/integration behavior;
-- accessibility;
-- production interaction.
+Reconnect real APIs/state, permission/domain gates, loading/error/empty states, audit/integration behavior, accessibility, and production interaction.
 
 Re-run visual verification after the rewire because real data can change layout.
 
@@ -64,32 +49,11 @@ Visual
    └─ requires Comparable State
 ```
 
-### Structural Visual
-
-Judge composition and hierarchy independently of literal values:
-
-- component/state variant;
-- information order;
-- row/column composition;
-- proportion;
-- spacing/alignment;
-- wrapping/truncation;
-- control placement;
-- expanded/collapsed geometry;
-- responsive/crop geometry within scope.
+Structural Visual judges component/state variant, hierarchy/order, row/column composition, proportion, spacing/alignment, wrapping/truncation, control placement, expanded/collapsed geometry, and responsive/crop geometry within scope.
 
 Literal data differences do not excuse structural defects.
 
-### Comparable State
-
-Pixel comparison is actionable only when the candidate and reference are meaningfully comparable:
-
-- same business/component state;
-- same role/tab/expanded condition;
-- same viewport;
-- same focused surface/crop;
-- sufficiently comparable data shape/cardinality;
-- intentional deltas declared in advance.
+Pixel comparison is actionable only when business/component state, role/tab/expanded condition, viewport, focused surface/crop, data shape/cardinality, and intentional deltas are meaningfully comparable.
 
 If state is not comparable:
 
@@ -98,8 +62,6 @@ Structural Visual = PASS/FAIL/BLOCKED as usual
 Pixel Visual      = BLOCKED
 Raw pixel diff    = diagnostic only
 ```
-
-### Pixel Visual
 
 When comparable:
 
@@ -111,11 +73,9 @@ PRODUCTION screenshot
 → PASS / FAIL
 ```
 
-Prefer stable focused surfaces over whole-page pixel ratios. Thresholds must be calibrated from known-good comparable evidence; a fixed percentage is not universal truth.
+Prefer stable focused surfaces over whole-page pixel ratios. Thresholds must be calibrated from known-good comparable evidence.
 
 When structural parity passes but residual pixel mismatch remains, use `pixel-parity-calibration` before changing product code or thresholds.
-
-### Verdict composition
 
 ```text
 Structural FAIL                  → Visual FAIL
@@ -137,15 +97,7 @@ Relevant page, API, or console failures can invalidate evidence and should produ
 
 ## 6. Interaction and state
 
-Exercise important states in a real browser when relevant:
-
-- click/open/close;
-- select/expand;
-- enabled/disabled;
-- loading/error/empty;
-- form validation;
-- state transitions;
-- keyboard/focus behavior.
+Exercise important states in a real browser when relevant: click/open/close, select/expand, enabled/disabled, loading/error/empty, form validation, state transitions, and keyboard/focus behavior.
 
 ## 7. Business contract
 
@@ -169,22 +121,9 @@ Use `runtime-regression` to determine what can carry forward and what must be re
 
 ## 9. Done rule
 
-Do not claim `aligned`, `matches design`, `PARITY READY`, or equivalent while any required concern is FAIL/BLOCKED/NOT VERIFIED, including:
+Do not claim `aligned`, `matches design`, `PARITY READY`, or equivalent while any required concern is FAIL/BLOCKED/NOT VERIFIED, including required surfaces, Structural Visual, required Pixel Visual, semantics, interaction, business contract, regression, relevant runtime errors, intentional deltas, or reviewer-accessible evidence.
 
-- required surfaces;
-- Structural Visual;
-- required Pixel Visual;
-- semantics;
-- interaction;
-- business contract;
-- regression;
-- unexplained relevant runtime errors;
-- undocumented intentional deltas;
-- reviewer-inaccessible evidence when independent review is required.
-
-Environment/data limitations should be reported as `BLOCKED` or `NOT VERIFIED`, not converted to PASS.
-
-Use `N/A` only when a concern is genuinely outside acceptance scope.
+Environment/data limitations should be reported as `BLOCKED` or `NOT VERIFIED`, not converted to PASS. Use `N/A` only when a concern is genuinely outside acceptance scope.
 
 ## 10. Completion and evidence manifest
 
@@ -195,8 +134,6 @@ PARITY READY
 PRODUCT COMPLETE
 = PARITY READY + required human/product acceptance on the final product state
 ```
-
-AI parity review does not replace human/product acceptance.
 
 Minimum manifest:
 
@@ -216,11 +153,11 @@ Intentional deltas:
 Evidence:
 ```
 
-If Pixel Visual is BLOCKED, state exactly what comparable fixture/state is missing rather than saying only `data differs`.
+If Pixel Visual is BLOCKED, state exactly what comparable fixture/state is missing.
 
 ## 11. Evidence and helper lifecycle
 
-Use `evidence-transport` for screenshots, diffs, traces, and reports that reviewers need to access.
+Use `evidence-transport` for reviewer-accessible screenshots, diffs, traces, and reports.
 
 ```text
 Evidence is disposable; reproducibility is durable.
@@ -231,14 +168,7 @@ Promote reusable helpers into owned verification infrastructure; delete session-
 
 ## 12. Fixture and threshold discipline
 
-Parity fixtures are verification infrastructure, not random UAT residue.
-
-- prefer deterministic fixtures for important states;
-- do not damage a valuable fixture merely to manufacture a screenshot;
-- missing required scenario → BLOCKED, or seed at the correct layer when allowed;
-- do not raise thresholds merely to turn red into green;
-- do not crop/mask a defect without a documented scope reason;
-- do not call geometry/hierarchy defects data noise because literal content differs.
+Prefer deterministic fixtures, do not damage valuable fixtures merely to manufacture screenshots, do not raise thresholds merely to turn red into green, and do not crop/mask defects without a documented scope reason.
 
 If threshold, crop, config, or fixture changes, recapture/re-evaluate affected evidence.
 

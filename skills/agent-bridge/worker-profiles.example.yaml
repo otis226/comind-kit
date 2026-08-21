@@ -27,10 +27,9 @@ profiles:
     readonly: false
     max_turns: 40
 
-agents:
+# Canonical CoMind roles are Agent Skills, so prefer skills: mappings.
+# agents: remains available for explicit project/user agent definitions.
+skills:
   ui-visual-reviewer: claude-ui-cheap
   ui-runtime-reviewer: grok-runtime-review
-  senior-dev: codex-implementation
-
-skills:
-  product-ui-critique: claude-ui-cheap
+  bounded-code-worker: codex-implementation

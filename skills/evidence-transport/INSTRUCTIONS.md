@@ -8,20 +8,11 @@ The goal is to keep evidence reviewable without turning source history, release 
 
 ## 1. Default meaning of artifact
 
-In this workflow, an `artifact` normally means:
-
-1. a PR/CI workflow artifact with retention; or
-2. another temporary reviewer-accessible mechanism.
-
-It does **not** mean GitHub Release by default.
+An `artifact` normally means a PR/CI workflow artifact with retention or another temporary reviewer-accessible mechanism. It does **not** mean GitHub Release by default.
 
 ## 2. Do not use releases/tags merely to transport evidence
 
-Do not create, solely for verification evidence:
-
-- GitHub releases/prereleases;
-- Git tags;
-- permanent binary/source commits containing temporary screenshots, diffs, traces, or reports.
+Do not create, solely for verification evidence, GitHub releases/prereleases, Git tags, or permanent binary/source commits containing temporary screenshots, diffs, traces, or reports.
 
 Release/tag namespaces belong to product release/versioning unless explicitly required otherwise.
 
@@ -61,11 +52,9 @@ Do not delete the only copy of evidence before a replacement is accessible. If t
 
 ## 6. Final evidence
 
-After the final candidate/sign-off:
+After final candidate/sign-off, preserve exact candidate SHA, reference/configuration, intentional deltas, and verdict when useful for audit. Raw screenshots/diffs/traces may expire when deterministic and reproducible according to project policy.
 
-- preserve exact candidate SHA, reference/configuration, intentional deltas, and verdict when useful for audit;
-- raw screenshots/diffs/traces may expire when deterministic and reproducible according to project policy;
-- do not create a product release merely to archive parity evidence.
+Do not create a product release merely to archive parity evidence.
 
 ```text
 Review evidence belongs to the review workflow.

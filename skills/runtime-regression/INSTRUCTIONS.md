@@ -28,8 +28,6 @@ If you cannot demonstrate that a change cannot affect prior critical behavior, p
 
 ## 2. Current-candidate regression bridge
 
-When a historical browser baseline exists but the candidate has advanced:
-
 ```text
 historical functional PASS
 → subsequent changes
@@ -37,32 +35,19 @@ historical functional PASS
 → critical capabilities still PASS?
 ```
 
-If a real regression appears:
-
-- reopen root-cause investigation at the correct scope;
-- fix the correct layer;
-- add/adjust a test from the observed failure when practical;
-- rerun the affected journey.
+If a real regression appears, reopen root-cause investigation at the correct scope, fix the correct layer, add/adjust a test from the observed failure when practical, and rerun the affected journey.
 
 If the journey still PASSes, carry forward only concerns that the new changes demonstrably did not affect.
 
 ## 3. Final-candidate critical journey
 
-Before final readiness for an important flow, use the real application and matching dependency contracts when practical:
-
-- real browser;
-- relevant critical mutation with network evidence;
-- reload/persistence for important state;
-- relevant page/console errors clean;
-- no mock-only evidence standing in for required runtime behavior.
+Before final readiness for an important flow, use the real application and matching dependency contracts when practical: real browser, relevant critical mutation with network evidence, reload/persistence for important state, relevant page/console errors clean, and no mock-only evidence standing in for required runtime behavior.
 
 If code changes after this journey, rerun affected parts before the new candidate inherits PASS.
 
 ## 4. Relationship to visual/design work
 
 Runtime PASS does not prove visual fidelity. Visual PASS does not prove runtime workflow correctness.
-
-With exact parity:
 
 ```text
 Structural/Pixel Visual
@@ -74,11 +59,7 @@ Without exact design, runtime regression still applies alongside coherence/desig
 
 ## 5. Orchestration
 
-- read/search investigation may be parallelized;
-- independent journeys may run in parallel when fixtures/state do not collide;
-- mutation-heavy journeys require clear fixture/ownership boundaries;
-- do not let multiple writers mutate the same shared region without isolation;
-- final integration owns the combined result.
+Read/search investigation may be parallelized. Independent journeys may run in parallel when fixtures/state do not collide. Mutation-heavy journeys require clear fixture/ownership boundaries. Final integration owns the combined result.
 
 ## 6. Evidence handoff
 
