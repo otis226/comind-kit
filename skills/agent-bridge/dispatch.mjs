@@ -20,6 +20,10 @@ function die(code, status, error, extra = {}) {
   process.exit(code);
 }
 
+function spawnHeadless(command, args, options = {}) {
+  return spawnSync(command, args, { ...options, windowsHide: true });
+}
+
 function parseScalar(raw) {
   const s = raw.trim();
   if (!s) return {};
@@ -163,7 +167,7 @@ const args = cli(process.argv.slice(2));
 if (!!args.agent === !!args.skill && !args.agentFile) die(2,'ERROR','Pass exactly one anchor: --agent/--agent-file or --skill');
 
 if (args.sdk) {
-  const run = spawnSync(process.execPath,[DIRECT,...args.passthrough],{encoding:'utf8',env:process.env});
+  const run = spawnHeadless(process.execPath,[DIRECT,...args.passthrough],{encoding:'utf8',env:process.env});
   process.stdout.write(run.stdout || ''); process.stderr.write(run.stderr || ''); process.exit(run.status ?? 4);
 }
 
@@ -190,7 +194,7 @@ let command;
 if (runtime === 'claude-code') command = [process.execPath, CLAUDE, ...out];
 else command = [process.execPath, DIRECT, ...out, '--sdk', runtime];
 
-const run = spawnSync(command[0],command.slice(1),{cwd:args.cwd || process.cwd(),encoding:'utf8',env,maxBuffer:64*1024*1024});
+const run = spawnHeadless(command[0],command.slice(1),{cwd:args.cwd || process.cwd(),encoding:'utf8',env,maxBuffer:64*1024*1024});
 process.stdout.write(run.stdout || '');
 process.stderr.write(run.stderr || '');
 process.exit(run.status ?? 4);
