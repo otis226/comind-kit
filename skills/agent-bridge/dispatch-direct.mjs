@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { resolveBin, spawnHeadless } from './process-launch.mjs';
 
 const HOME = os.homedir();
 
@@ -23,15 +23,11 @@ const HOME = os.homedir();
 // browser may be:
 //   'verified' / 'unverified' / 'none'
 //   { type: 'mcp-doctor', server: '<name>' } for a runtime capability probe.
-// windowsShell should be true only for a backend that genuinely requires cmd.exe
-// (for example an npm .cmd shim). Native executables must stay shell-free so argv
-// such as JSON schemas cannot be re-parsed or corrupted by cmd.exe.
 const BACKENDS = {
   grok: {
     bin: 'grok',
     enabled: true,
     browser: { type: 'mcp-doctor', server: 'chrome-devtools' },
-    windowsShell: false,
     // Keep this pinned so a bridged run cannot drift with ~/.grok/config.toml.
     defaultModel: 'grok-4.6',
     build(ctx) {
@@ -59,9 +55,6 @@ const BACKENDS = {
     bin: 'codex',
     enabled: true,
     browser: 'unverified',
-    // Preserve compatibility with Windows npm .cmd shims. windowsHide still keeps
-    // the shell headless. A native Codex launcher can move this to false later.
-    windowsShell: true,
     defaultModel: 'gpt-5.6-sol',
     build(ctx) {
       const args = ['exec', '-'];
@@ -79,7 +72,6 @@ const BACKENDS = {
     bin: 'cursor-agent',
     enabled: false,
     browser: 'unverified',
-    windowsShell: false,
     defaultModel: null,
     build() { throw new Error('cursor backend is not enabled yet'); },
   },
@@ -90,10 +82,6 @@ function fail(code, status, message, extra) {
   const envelope = Object.assign({ status, agent: null, sdk: null }, extra || {}, { error: message });
   process.stdout.write(JSON.stringify(envelope, null, 2) + '\n');
   process.exit(code);
-}
-
-function spawnHeadless(command, args, options = {}) {
-  return spawnSync(command, args, { ...options, windowsHide: true });
 }
 
 const strip = (s) => s.trim().replace(/^["']|["']$/g, '').trim();
@@ -126,19 +114,13 @@ function parseArgs(argv) {
   return out;
 }
 
-function onPath(bin) {
-  const probe = process.platform === 'win32' ? 'where' : 'which';
-  return spawnHeadless(probe, [bin], { encoding: 'utf8' }).status === 0;
-}
-
-function probeBrowser(backend, cwd) {
+function probeBrowser(backend, launch, cwd) {
   const capability = backend.browser;
   if (capability === 'verified') return { ok: true };
   if (capability && typeof capability === 'object' && capability.type === 'mcp-doctor') {
-    const run = spawnHeadless(backend.bin, ['mcp', 'doctor', capability.server, '--json'], {
+    const run = spawnHeadless(launch.command, [...launch.preArgs, 'mcp', 'doctor', capability.server, '--json'], {
       cwd: cwd || process.cwd(),
       encoding: 'utf8',
-      shell: process.platform === 'win32' && backend.windowsShell === true,
     });
     if (run.status === 0) return { ok: true };
     const detail = ((run.stderr || run.stdout || '').trim().slice(0, 1200) || 'probe exited with status ' + run.status);
@@ -295,12 +277,17 @@ if (!backend.enabled) {
   fail(3, 'BLOCKED', 'Backend "' + opts.sdk + '" is a placeholder and not enabled in this build.',
     { agent: opts.agent || opts.skill, sdk: opts.sdk });
 }
-if (!onPath(backend.bin)) {
+const launch = resolveBin(backend.bin);
+if (!launch) {
   fail(3, 'BLOCKED', 'Backend CLI "' + backend.bin + '" is not on PATH.',
     { agent: opts.agent || opts.skill, sdk: opts.sdk });
 }
+if (!launch.command) {
+  fail(3, 'BLOCKED', launch.error || ('Backend CLI "' + backend.bin + '" cannot be launched safely on this platform.'),
+    { agent: opts.agent || opts.skill, sdk: opts.sdk });
+}
 if (opts.needsBrowser) {
-  const browser = probeBrowser(backend, opts.cwd);
+  const browser = probeBrowser(backend, launch, opts.cwd);
   if (!browser.ok) {
     fail(3, 'BLOCKED',
       'Task requires browser evidence but backend "' + opts.sdk + '" cannot prove the required browser capability. ' + browser.detail,
@@ -409,6 +396,7 @@ const ctx = {
 };
 
 const plan = backend.build(ctx);
+const command = [launch.command, ...launch.preArgs, ...plan.args];
 const info = {
   status: 'OK',
   agent: agentName,
@@ -420,22 +408,22 @@ const info = {
   needsBrowser: opts.needsBrowser,
   skills: skills.map((s) => s.name),
   promptBytes: Buffer.byteLength(prompt, 'utf8'),
+  launcherKind: launch.kind,
 };
 
 if (opts.dryRun) {
-  const preview = Object.assign({}, info, { status: 'DRY_RUN', command: [backend.bin].concat(plan.args) });
+  const preview = Object.assign({}, info, { status: 'DRY_RUN', command });
   process.stdout.write(JSON.stringify(preview, null, 2) + '\n');
   process.stdout.write('\n----- composed prompt (' + info.promptBytes + ' bytes) -----\n' + prompt);
   fs.rmSync(promptFile, { force: true });
   process.exit(0);
 }
 
-const run = spawnHeadless(backend.bin, plan.args, {
+const run = spawnHeadless(launch.command, [...launch.preArgs, ...plan.args], {
   cwd: opts.cwd || process.cwd(),
   input: plan.stdin || undefined,
   encoding: 'utf8',
   maxBuffer: 64 * 1024 * 1024,
-  shell: process.platform === 'win32' && backend.windowsShell === true,
 });
 
 let output = run.stdout || '';

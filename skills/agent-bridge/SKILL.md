@@ -144,6 +144,26 @@ The direct executor keeps explicit model/sandbox behavior. Grok browser-required
 
 Third-party gateway/model compatibility is configuration responsibility. A route accepting an Anthropic-shaped request does not by itself prove reliable Claude Code tool behavior.
 
+### Windows launcher safety
+
+Windows launcher behavior is resolved from the actual PATH entry, not inferred from backend name.
+
+```text
+native .exe/.com
+→ direct spawn
+
+recognized npm .cmd/.bat shim
+→ resolve its real node/native entrypoint
+→ direct spawn without cmd.exe
+
+unknown batch shim
+→ BLOCKED
+```
+
+Do not pass worker-controlled model/schema/profile arguments through `cmd.exe`. Structured JSON loses quoting through ordinary `shell: true` batch execution and shell metacharacters create an avoidable injection surface.
+
+Child processes use `windowsHide: true` as headless-process hygiene. Do not treat that option as proof of the root cause or fix for terminal redraw/flicker; terminal escape sequences can come from runtime hooks or wrappers outside Agent Bridge and must be diagnosed separately.
+
 ## 7. Result contract
 
 ```text
