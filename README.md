@@ -123,3 +123,4 @@ node scripts/validate-public.mjs
 See `CHANGELOG.md`, `CONTRIBUTING.md`, and `SECURITY.md` for maintenance and compatibility guidance.
 
 MIT — see `LICENSE`.
+
