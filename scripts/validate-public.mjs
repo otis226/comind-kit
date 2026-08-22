@@ -10,9 +10,20 @@ const errors = [];
 for (const relative of required) {
   if (!fs.existsSync(path.join(root, relative))) errors.push(`Missing required file: ${relative}`);
 }
-if (fs.existsSync(path.join(root, 'agents'))) {
-  errors.push('Permanent runtime specialist agents are not part of the public architecture; use Agent Skills.');
+
+const forbiddenAgentDirs = [
+  'agents',
+  '.claude/agents',
+  '.cursor/agents',
+  '.codex/agents',
+  '.grok/agents',
+];
+for (const relative of forbiddenAgentDirs) {
+  if (fs.existsSync(path.join(root, relative))) {
+    errors.push(`Permanent runtime specialist agent definitions are not part of the public architecture: ${relative}`);
+  }
 }
+
 function walk(dir) {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -22,6 +33,7 @@ function walk(dir) {
   }
   return out;
 }
+
 const skillsRoot = path.join(root, 'skills');
 if (!fs.existsSync(skillsRoot)) errors.push('Missing skills/ directory.');
 else {
@@ -39,6 +51,7 @@ else {
     if (skillText.includes('INSTRUCTIONS.md') && !fs.existsSync(path.join(skillsRoot, entry.name, 'INSTRUCTIONS.md'))) errors.push(`SKILL.md references missing INSTRUCTIONS.md: ${entry.name}`);
   }
 }
+
 const globalForbidden = [
   [/otis226\/comind(?!-kit)/i, 'private repository reference'],
   [/\.comind[\\/]repo/i, 'private local mirror reference'],
@@ -72,10 +85,20 @@ for (const file of walk(root)) {
     if (relative.endsWith('.md') && vietnameseSignals.test(text)) errors.push(`${relative}: reusable runtime instructions should be English-first`);
   }
 }
+
+const retiredMetadataSignals = /external[- ]worker|cross[- ]runtime|agent-bridge/i;
 for (const relative of ['.claude-plugin/plugin.json', '.claude-plugin/marketplace.json']) {
   const file = path.join(root, relative);
   if (!fs.existsSync(file)) continue;
-  try { JSON.parse(fs.readFileSync(file, 'utf8')); } catch (error) { errors.push(`${relative}: invalid JSON (${error.message})`); }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (retiredMetadataSignals.test(JSON.stringify(parsed))) {
+      errors.push(`${relative}: plugin metadata advertises retired external/cross-runtime execution`);
+    }
+  } catch (error) {
+    errors.push(`${relative}: invalid JSON (${error.message})`);
+  }
 }
+
 if (errors.length) { console.error('Public validation FAILED:\n- ' + errors.join('\n- ')); process.exit(1); }
 console.log('Public validation PASS');
