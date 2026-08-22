@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff
 description: >-
-  Use when a main owner delegates bounded implementation, inspection, or review and needs an explicit ownership map, compact task packet, deterministic role dispatch, and integration-ready return contract.
+  Use when a main owner delegates bounded implementation, inspection, or review and needs an explicit ownership map, compact task packet, role dispatch, and integration-ready return contract.
 ---
 
 <!-- comind-managed-skill: coding-agent-handoff -->
@@ -15,8 +15,10 @@ Responsibility boundary:
 ```text
 llm-resource-governor decides WHEN to delegate
 coding-agent-handoff defines WHAT the worker owns/receives/returns
-worker-profiles.yaml decides WHICH configured worker runs the role
-agent-bridge executes HOW that configured worker runs
+Agent Skill / explicit agent defines WHICH role/behavior executes
+agent-bridge optionally executes HOW an explicitly selected external runtime runs that role
 ```
 
-Do not infer provider/model economics and do not silently substitute a configured route.
+Native execution is the default. When external execution is deliberately chosen, keep runtime/model selection explicit at the dispatch boundary.
+
+Do not infer provider/model economics and do not silently substitute another runtime/model after a failed or blocked external route.

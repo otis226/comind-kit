@@ -1,7 +1,7 @@
 ---
 name: llm-resource-governor
 description: >-
-  Use when a coding/review workflow may spawn workers, accumulate large context, or consume scarce premium-model quota. Decide when bounded work should be offloaded, keep worker context/output compact, and escalate only when earned. Worker/provider/model selection is deterministic user configuration, not model-price inference.
+  Use when a coding/review workflow may spawn workers, accumulate large context, or consume scarce premium-model quota. Decide when bounded work should be offloaded, keep worker context/output compact, and escalate only when earned. Choose roles by capability; keep any external runtime/model selection explicit rather than inferred from model economics.
 ---
 
 <!-- comind-managed-skill: llm-resource-governor -->
@@ -13,7 +13,9 @@ Preserve delivery quality while reducing unnecessary premium-owner token burn.
 ```text
 PREMIUM OWNER THINKS / DECIDES / INTEGRATES
 BOUNDED WORKERS READ / WRITE / REVIEW
-WORKER CONFIG DECIDES WHICH RUNTIME/MODEL/API
+AGENT SKILL / AGENT DEFINES THE ROLE
+NATIVE EXECUTION BY DEFAULT
+EXTERNAL RUNTIME/MODEL ONLY WHEN EXPLICITLY CHOSEN
 MINIMUM SUFFICIENT CONTEXT
 COMPACT RESULTS
 ESCALATION IS EARNED
@@ -22,9 +24,9 @@ QUALITY GATES STAY
 
 `llm-resource-governor` answers **WHEN should this work be offloaded?**
 
-`worker-profiles.yaml` answers **WHICH worker runs this agent/skill?**
+The selected Agent Skill or explicit agent definition answers **WHICH role/behavior should execute?**
 
-`agent-bridge` answers **HOW is that configured worker executed safely?**
+`agent-bridge` answers **HOW is an explicitly selected external worker executed safely?**
 
 Do not collapse these responsibilities.
 
@@ -41,7 +43,7 @@ A model alias may point to:
 - a differently priced provider;
 - another model entirely behind a compatible endpoint.
 
-Therefore routing is not:
+Therefore delegation is not:
 
 ```text
 inspect model name
@@ -49,15 +51,16 @@ inspect model name
 → select provider
 ```
 
-Routing is:
+Delegation is:
 
 ```text
-role required
-→ lookup configured agent/skill mapping
-→ execute that profile
+resolve whether delegation helps
+→ choose the correct role/skill
+→ run it natively by default
+→ if external execution is deliberately useful, choose runtime/model explicitly
 ```
 
-Treat the configured profile as user intent. Do not silently substitute another provider/model because it appears cheaper, stronger, or more familiar.
+Do not silently substitute another provider/model because it appears cheaper, stronger, or more familiar.
 
 ## 2. Main owner responsibility
 
@@ -79,38 +82,48 @@ Strong offload candidates:
 - isolated implementation with clear acceptance rules;
 - repetitive refactor/migration within explicit boundaries;
 - screenshot/visual UI review;
-- runtime/browser evidence collection when the mapped worker has verified browser capability;
+- runtime/browser evidence collection when the selected execution path has verified browser capability;
 - targeted test/log/console/network evidence.
 
 Do not offload a tiny task when packet construction/integration would cost more than doing it locally.
 
-## 3. Deterministic worker routing
+## 3. Role-first execution
 
-When an Agent Bridge worker config is available, invoke the role by agent/skill name and let the bridge resolve the mapping.
+Choose the role by concern and authority, not by provider.
 
 ```text
-agent/skill -> configured profile -> runtime/model/endpoint/auth source
+main owner
+→ choose Agent Skill / explicit agent
+→ NATIVE by default
 ```
 
-Do not pass `--sdk` or `--model` routinely from orchestration logic; doing so bypasses/overrides user routing. Use explicit overrides only for a deliberate one-off test/debug run.
+When an external runtime materially improves isolation, capability, quota use, or execution fit:
+
+```text
+chosen role
+→ agent-bridge + explicit runtime/model
+→ external worker
+```
+
+Do not maintain or infer a hidden role-to-provider mapping in orchestration logic.
 
 Interpret Agent Bridge results as:
 
 ```text
 NATIVE
-→ use the normal native specialist/subagent
+→ use the normal native specialist/subagent/context
 
 OK
 → consume worker result
 
 BLOCKED
-→ resolve credential/capability/config blocker or escalate
+→ resolve the explicit route's credential/capability blocker or escalate
 
 BACKEND_FAILED
 → inspect bounded failure; retry only when useful
 ```
 
-Do not silently route a BLOCKED configured worker to another external provider.
+Do not silently route a BLOCKED external worker to another provider.
 
 ## 4. Minimum sufficient context
 
@@ -244,9 +257,9 @@ neither
 → neither UI reviewer
 ```
 
-Which model/runtime runs those roles comes only from worker configuration.
+Choose these roles independently from provider/model choice.
 
-Browser/runtime reviewers must have verified browser capability. If the mapped profile cannot prove it, keep the result BLOCKED rather than substituting unevidenced review.
+Browser/runtime reviewers must use an execution path with verified browser capability. If the selected path cannot prove it, keep the result BLOCKED rather than substituting unevidenced review.
 
 Browser-heavy workers are short-lived: exact route/scenario in, compact verdict/evidence out, then end.
 
@@ -266,9 +279,9 @@ OUTPUT BUDGET
 ESCALATE WHEN
 ```
 
-The mapped worker may inspect, edit, test, and report within its boundary. The owner retains architecture, shared wiring, integration, and unresolved trade-offs.
+The selected worker may inspect, edit, test, and report within its boundary. The owner retains architecture, shared wiring, integration, and unresolved trade-offs.
 
-A configured worker PASS does not equal product completion.
+A worker PASS does not equal product completion.
 
 ## 10. Evidence reuse and context lifecycle
 
@@ -299,6 +312,6 @@ Discard stale tool chatter and superseded debugging.
 
 Resource optimization never justifies skipping required product/business/security/release gates.
 
-Do not route destructive deploy/release/credential/database mutation through an arbitrary configured worker unless the project explicitly approves that execution path.
+Do not route destructive deploy/release/credential/database mutation through an arbitrary external worker unless the project explicitly approves that execution path.
 
-The user controls worker mappings; the governor controls orchestration discipline.
+The governor controls delegation discipline. Role definitions live in agents/skills. External runtime/model selection stays explicit at execution time.

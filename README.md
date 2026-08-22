@@ -1,6 +1,6 @@
 # CoMind Kit
 
-Reusable Agent Skills for engineering delivery, UI design/review, verification, shipping, and deterministic external-worker execution.
+Reusable Agent Skills for engineering delivery, UI design/review, verification, shipping, and optional explicit external-worker execution.
 
 CoMind Kit is project-neutral: project truth comes from the repository where the skills are used.
 
@@ -24,17 +24,19 @@ llm-resource-governor
 coding-agent-handoff
 = WHAT the worker owns/receives/returns
 
-worker-profiles.yaml
-= WHICH runtime/model/API executes the role
+Agent Skill / explicit agent
+= WHICH role/behavior executes
 
 agent-bridge
-= HOW the configured external worker executes
+= HOW an explicitly selected external runtime/model executes the role
 
 bounded-code-worker
 = bounded implementation execution
 ```
 
-Do not map `senior-dev` to a cheap/external coding worker. Keep the main owner as the owner; map `bounded-code-worker` for implementation slices.
+Do not use `senior-dev` as a bounded coding worker. Keep the main owner as the owner; use `bounded-code-worker` for implementation slices.
+
+Native execution is the default. CoMind Kit does not maintain persistent role-to-provider mappings.
 
 ## Main skills
 
@@ -46,7 +48,7 @@ Do not map `senior-dev` to a cheap/external coding worker. Keep the main owner a
 | `llm-resource-governor` | Delegation may save context/quota or isolate evidence work |
 | `coding-agent-handoff` | A worker needs explicit ownership, packet, dispatch, and return contract |
 | `bounded-code-worker` | One clear implementation/refactor slice should be delegated |
-| `agent-bridge` | A configured role should run on an external runtime/model/API |
+| `agent-bridge` | A role should deliberately run on an explicitly selected external runtime/model |
 | `finalize-workstream` | An accepted candidate is ready for authorized merge/finalization |
 
 ### Product UI
@@ -69,75 +71,40 @@ Do not map `senior-dev` to a cheap/external coding worker. Keep the main owner a
 | `runtime-regression` | Candidate changed after prior runtime evidence |
 | `evidence-transport` | Verification artifacts must be reviewer-accessible |
 
-## Optional deterministic external workers
+## Explicit external workers
 
-Create:
+Use the native runtime/context unless there is a concrete reason to execute the role elsewhere.
 
-```text
-~/.config/comind/worker-profiles.yaml
+When external execution is useful, choose runtime/model at dispatch time:
+
+```bash
+node skills/agent-bridge/dispatch.mjs \
+  --skill bounded-code-worker \
+  --sdk codex \
+  --model gpt-5.6-sol \
+  --scope-file /tmp/task.md \
+  --cwd /path/to/repo
 ```
 
-Start from `skills/agent-bridge/worker-profiles.example.yaml`.
+For an external Claude Code route, bind the worker credential by environment-variable name rather than embedding a secret:
 
-Example:
-
-```yaml
-version: 1
-
-profiles:
-  ui-cheap:
-    runtime: claude-code
-    model: your-third-party-model-id
-    base_url: https://gateway.example.com
-    api_key_env: UI_REVIEW_TOKEN
-    readonly: true
-
-  runtime-review:
-    runtime: grok
-    model: grok-4.6
-    readonly: true
-    needs_browser: true
-
-  coding:
-    runtime: codex
-    model: gpt-5.6-sol
-    readonly: false
-
-skills:
-  ui-visual-reviewer: ui-cheap
-  ui-runtime-reviewer: runtime-review
-  bounded-code-worker: coding
+```bash
+node skills/agent-bridge/dispatch.mjs \
+  --skill ui-visual-reviewer \
+  --sdk claude-code \
+  --model <model-id> \
+  --api-key-env UI_REVIEW_TOKEN \
+  --base-url https://gateway.example.com \
+  --readonly yes \
+  --scope-file /tmp/review.md
 ```
 
-Keep real secrets out of YAML. `api_key_env` and `env_from` reference environment variables.
-
-The orchestrator chooses the role. Configuration chooses runtime/model/API. Agent Bridge does not guess model cost.
-
-## Routing precedence
-
-```text
-explicit --sdk
-→ direct debug/compatibility backend
-
-explicit --profile
-→ configured profile
-
-agents.<agent>
-→ project/user agent profile
-
-skills.<skill>
-→ canonical skill profile
-
-no mapping
-→ NATIVE
-```
-
-Prefer `skills:` mappings for canonical CoMind roles. `agents:` is available for explicit project/user agent definitions.
+The orchestrator chooses the role. External runtime/model selection is explicit. Agent Bridge does not guess model cost or silently substitute another provider.
 
 ## Runtime notes
 
-- Claude Code external workers run as separate non-interactive processes with explicit gateway/model/credential binding and sandboxing.
-- External Claude Code browser capability is fail-closed until verified; route live browser review to a verified runtime.
+- Claude Code external workers run as separate non-interactive processes with explicit model/credential binding and sandboxing.
+- External Claude Code browser capability is fail-closed until verified; use a verified runtime for live browser review.
 - Grok browser-required runs probe the configured browser integration before work.
 - Codex/Grok direct executors preserve explicit model/sandbox behavior.
 - A third-party compatible endpoint does not automatically prove every model supports Claude Code tools correctly; smoke-test the exact route.
@@ -180,8 +147,8 @@ comind-kit/
 ## Trust model
 
 - Business rules, design decisions, API contracts, permissions, and release policy come from the active project.
-- Worker configuration is user-owned; repositories do not auto-control external routing.
-- Secrets remain outside worker-profile YAML.
+- Agent Skills/agent definitions own role behavior; repositories do not auto-select external providers.
+- Secrets remain outside skills, agent definitions, task packets, repository files, and CLI literals.
 - AI review does not replace required product/user acceptance.
 
 ## Validation
@@ -193,4 +160,3 @@ node scripts/validate-public.mjs
 See `CHANGELOG.md`, `CONTRIBUTING.md`, and `SECURITY.md` for maintenance and compatibility guidance.
 
 MIT — see `LICENSE`.
-
