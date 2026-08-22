@@ -26,7 +26,6 @@ jobs:
           cd "$sandbox"
           npx -y skills@1.5.22 add "$GITHUB_WORKSPACE" --skill '*' --agent claude-code --copy --yes
           for skill in \
-            agent-bridge \
             bounded-code-worker \
             coding-agent-handoff \
             design-parity \
