@@ -24,11 +24,11 @@ llm-resource-governor
 coding-agent-handoff
 = ownership + task packet + dispatch/result protocol
 
-worker-profiles.yaml
-= which runtime/model/endpoint/credential executes a role
+Agent Skill / explicit agent
+= role + behavior contract
 
 agent-bridge
-= how a configured external worker is executed
+= optional explicit external execution transport
 
 bounded-code-worker
 = one bounded implementation slice
@@ -74,7 +74,7 @@ interaction/state/navigation/form/async/runtime
 
 Choose the role, not the provider/model.
 
-Do not infer model price, cost tier, or scarcity from vendor/model names. Do not routinely pass provider/model overrides. User-owned worker configuration decides which runtime/model/API executes the chosen role.
+Native execution is the default. If an external runtime materially improves isolation, capability, or resource use, select that runtime/model explicitly at dispatch time. Do not infer model price, cost tier, or scarcity from vendor/model names and do not maintain hidden role-to-provider mappings.
 
 Use `coding-agent-handoff` to define ownership, task packet, dispatch, and return contract.
 
