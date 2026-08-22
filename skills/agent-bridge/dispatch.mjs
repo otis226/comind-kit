@@ -34,7 +34,7 @@ function cli(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (removed.has(a)) {
-      die(2, 'ERROR', `${a} was removed with worker profile routing. Choose the role with --agent/--skill and select external execution explicitly with --sdk and --model.`);
+      die(2, 'ERROR', `${a} is no longer supported. Choose the role with --agent/--skill and select external execution explicitly with --sdk and --model.`);
     }
     if (valueFlags.has(a)) {
       const v = argv[++i];
@@ -67,7 +67,7 @@ if (!args.sdk) {
 }
 
 if (!args.model) {
-  die(2, 'ERROR', 'External execution requires an explicit --model. CoMind no longer resolves runtime/model from worker profiles.', { sdk: args.sdk });
+  die(2, 'ERROR', 'External execution requires an explicit --model. CoMind does not resolve runtime/model from persistent role mappings.', { sdk: args.sdk });
 }
 
 let run;
