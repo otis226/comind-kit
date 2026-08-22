@@ -1,6 +1,6 @@
 # CoMind Kit
 
-Reusable Agent Skills for engineering delivery, UI design/review, verification, shipping, and optional explicit external-worker execution.
+Reusable Agent Skills for engineering delivery, UI design/review, verification, and shipping.
 
 CoMind Kit is project-neutral: project truth comes from the repository where the skills are used.
 
@@ -10,7 +10,7 @@ CoMind Kit is project-neutral: project truth comes from the repository where the
 npx -y skills@1.5.22 add otis226/comind-kit
 ```
 
-The canonical unit is an Agent Skill. CoMind Kit does not ship permanent specialist agent wrappers.
+The canonical unit is an Agent Skill. CoMind Kit does not ship permanent specialist agent wrappers or cross-runtime execution adapters.
 
 ## Core architecture
 
@@ -27,16 +27,14 @@ coding-agent-handoff
 Agent Skill / explicit agent
 = WHICH role/behavior executes
 
-agent-bridge
-= HOW an explicitly selected external runtime/model executes the role
+current runtime
+= HOW the role executes through native context/subagent/tooling
 
 bounded-code-worker
 = bounded implementation execution
 ```
 
 Do not use `senior-dev` as a bounded coding worker. Keep the main owner as the owner; use `bounded-code-worker` for implementation slices.
-
-Native execution is the default. CoMind Kit does not maintain persistent role-to-provider mappings.
 
 ## Main skills
 
@@ -46,9 +44,8 @@ Native execution is the default. CoMind Kit does not maintain persistent role-to
 |---|---|
 | `senior-dev` | Non-trivial feature/refactor/bug fix needs one accountable owner |
 | `llm-resource-governor` | Delegation may save context/quota or isolate evidence work |
-| `coding-agent-handoff` | A worker needs explicit ownership, packet, dispatch, and return contract |
+| `coding-agent-handoff` | A worker needs explicit ownership, packet, native dispatch, and return contract |
 | `bounded-code-worker` | One clear implementation/refactor slice should be delegated |
-| `agent-bridge` | A role should deliberately run on an explicitly selected external runtime/model |
 | `finalize-workstream` | An accepted candidate is ready for authorized merge/finalization |
 
 ### Product UI
@@ -71,45 +68,9 @@ Native execution is the default. CoMind Kit does not maintain persistent role-to
 | `runtime-regression` | Candidate changed after prior runtime evidence |
 | `evidence-transport` | Verification artifacts must be reviewer-accessible |
 
-## Explicit external workers
+## Runtime-native execution
 
-Use the native runtime/context unless there is a concrete reason to execute the role elsewhere.
-
-When external execution is useful, choose runtime/model at dispatch time:
-
-```bash
-node skills/agent-bridge/dispatch.mjs \
-  --skill bounded-code-worker \
-  --sdk codex \
-  --model gpt-5.6-sol \
-  --scope-file /tmp/task.md \
-  --cwd /path/to/repo
-```
-
-For an external Claude Code route, bind the worker credential by environment-variable name rather than embedding a secret:
-
-```bash
-node skills/agent-bridge/dispatch.mjs \
-  --skill ui-visual-reviewer \
-  --sdk claude-code \
-  --model <model-id> \
-  --api-key-env UI_REVIEW_TOKEN \
-  --base-url https://gateway.example.com \
-  --readonly yes \
-  --scope-file /tmp/review.md
-```
-
-The orchestrator chooses the role. External runtime/model selection is explicit. Agent Bridge does not guess model cost or silently substitute another provider.
-
-## Runtime notes
-
-- Claude Code external workers run as separate non-interactive processes with explicit model/credential binding and sandboxing.
-- External Claude Code browser capability is fail-closed until verified; use a verified runtime for live browser review.
-- Grok browser-required runs probe the configured browser integration before work.
-- Codex/Grok direct executors preserve explicit model/sandbox behavior.
-- A third-party compatible endpoint does not automatically prove every model supports Claude Code tools correctly; smoke-test the exact route.
-
-## Native runtime targeting
+Install the same skills into whichever supported runtime you want to use, then execute roles with that runtime's native context/subagent/tooling.
 
 Claude Code only:
 
@@ -122,6 +83,8 @@ Claude Code + Cursor + Codex:
 ```bash
 npx -y skills@1.5.22 add otis226/comind-kit --global --skill '*' --agent claude-code --agent cursor --agent codex --yes
 ```
+
+If you want a task handled in another runtime, start that runtime directly and invoke the same Agent Skill/task packet there. CoMind Kit does not spawn external CLIs, proxy credentials, select models, or maintain provider routing.
 
 ## Optional Claude Code plugin install
 
@@ -147,8 +110,8 @@ comind-kit/
 ## Trust model
 
 - Business rules, design decisions, API contracts, permissions, and release policy come from the active project.
-- Agent Skills/agent definitions own role behavior; repositories do not auto-select external providers.
-- Secrets remain outside skills, agent definitions, task packets, repository files, and CLI literals.
+- Agent Skills/agent definitions own role behavior; execution is native to the runtime in which they are installed.
+- Secrets remain outside skills, agent definitions, task packets, and repository files.
 - AI review does not replace required product/user acceptance.
 
 ## Validation
