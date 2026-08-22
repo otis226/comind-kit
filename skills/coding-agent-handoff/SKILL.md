@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff
 description: >-
-  Use when a main owner delegates bounded implementation, inspection, or review and needs an explicit ownership map, compact task packet, role dispatch, and integration-ready return contract.
+  Use when a main owner delegates bounded implementation, inspection, or review and needs an explicit ownership map, compact task packet, native role dispatch, and integration-ready return contract.
 ---
 
 <!-- comind-managed-skill: coding-agent-handoff -->
@@ -16,9 +16,7 @@ Responsibility boundary:
 llm-resource-governor decides WHEN to delegate
 coding-agent-handoff defines WHAT the worker owns/receives/returns
 Agent Skill / explicit agent defines WHICH role/behavior executes
-agent-bridge optionally executes HOW an explicitly selected external runtime runs that role
+current runtime executes HOW through its native context/subagent/tooling
 ```
 
-Native execution is the default. When external execution is deliberately chosen, keep runtime/model selection explicit at the dispatch boundary.
-
-Do not infer provider/model economics and do not silently substitute another runtime/model after a failed or blocked external route.
+CoMind does not select providers/models or spawn another runtime. If a user wants another runtime, invoke the same role/task packet from that runtime directly.

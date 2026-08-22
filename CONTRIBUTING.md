@@ -11,7 +11,8 @@ Contributions should keep the toolkit:
 - explicit about evidence, authority, uncertainty, and verification;
 - free of secrets, private project knowledge, private repository paths, and machine-specific assumptions;
 - compatible with the Agent Skills package model;
-- free of duplicate runtime-specific workflow sources.
+- free of duplicate runtime-specific workflow sources;
+- free of provider-routing or cross-runtime execution adapters.
 
 ## Skill structure
 
@@ -27,7 +28,11 @@ skills/<name>/
 
 Reference sibling capabilities by installed skill name such as `design-parity` or `runtime-regression`. Do not introduce legacy flat references.
 
-The skill is the role. Do not add permanent Claude/Cursor-specific specialist agent wrappers. Use a fresh native context or deterministic `agent-bridge` worker profile when isolation/external execution is needed.
+The skill is the reusable role. Do not add permanent Claude/Cursor/Grok-specific specialist agent wrappers. Use the current runtime's native context/subagent/tooling.
+
+If users want the same role in another runtime, they install/sync the skill there and invoke it from that runtime directly. CoMind Kit must not grow a cross-runtime process, credential, model, or provider-routing layer.
+
+Project/user agent definitions may compose skills with project-specific instructions, but they are role contracts rather than provider-routing configuration.
 
 ## Pull requests
 

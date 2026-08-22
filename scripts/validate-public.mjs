@@ -10,9 +10,20 @@ const errors = [];
 for (const relative of required) {
   if (!fs.existsSync(path.join(root, relative))) errors.push(`Missing required file: ${relative}`);
 }
-if (fs.existsSync(path.join(root, 'agents'))) {
-  errors.push('Permanent runtime specialist agents are not part of the public architecture; use Agent Skills.');
+
+const forbiddenAgentDirs = [
+  'agents',
+  '.claude/agents',
+  '.cursor/agents',
+  '.codex/agents',
+  '.grok/agents',
+];
+for (const relative of forbiddenAgentDirs) {
+  if (fs.existsSync(path.join(root, relative))) {
+    errors.push(`Permanent runtime specialist agent definitions are not part of the public architecture: ${relative}`);
+  }
 }
+
 function walk(dir) {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -22,9 +33,13 @@ function walk(dir) {
   }
   return out;
 }
+
 const skillsRoot = path.join(root, 'skills');
 if (!fs.existsSync(skillsRoot)) errors.push('Missing skills/ directory.');
 else {
+  if (fs.existsSync(path.join(skillsRoot, 'agent-bridge'))) {
+    errors.push('Retired cross-runtime execution bridge must not exist in the public skill set.');
+  }
   for (const entry of fs.readdirSync(skillsRoot, { withFileTypes: true })) {
     if (entry.isFile() && entry.name.endsWith('.md')) errors.push(`Legacy flat skill file is not allowed: ${entry.name}`);
     if (!entry.isDirectory()) continue;
@@ -36,6 +51,7 @@ else {
     if (skillText.includes('INSTRUCTIONS.md') && !fs.existsSync(path.join(skillsRoot, entry.name, 'INSTRUCTIONS.md'))) errors.push(`SKILL.md references missing INSTRUCTIONS.md: ${entry.name}`);
   }
 }
+
 const globalForbidden = [
   [/otis226\/comind(?!-kit)/i, 'private repository reference'],
   [/\.comind[\\/]repo/i, 'private local mirror reference'],
@@ -46,6 +62,12 @@ const globalForbidden = [
   [/\/(?:Users|home)\/[A-Za-z0-9._-]+\//i, 'machine-specific home path'],
 ];
 const runtimeForbidden = [[/skills\/[a-z0-9-]+\.md\b/i, 'legacy flat skill path']];
+const architectureForbidden = [
+  [/worker[- ]profiles?/i, 'retired worker-profile routing concept'],
+  [/AGENT_BRIDGE_WORKER_CONFIG/i, 'retired worker-profile configuration variable'],
+  [/\bagent-bridge\b/i, 'retired cross-runtime execution bridge'],
+];
+const activeArchitectureDocs = new Set(['README.md', 'AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md']);
 const vietnameseSignals = /\b(?:Mục đích|Dùng khi|Nguyên tắc|Không|Nếu|Khi nào|Trước khi|Sau khi|Đây là|phải|được)\b/i;
 for (const file of walk(root)) {
   const relative = path.relative(root, file).replaceAll('\\', '/');
@@ -54,15 +76,29 @@ for (const file of walk(root)) {
   const text = fs.readFileSync(file, 'utf8');
   for (const [pattern, label] of globalForbidden) if (pattern.test(text)) errors.push(`${relative}: ${label}`);
   const isRuntimeInstruction = relative.startsWith('skills/');
+  const isActiveArchitecture = isRuntimeInstruction || activeArchitectureDocs.has(relative);
+  if (isActiveArchitecture) {
+    for (const [pattern, label] of architectureForbidden) if (pattern.test(text)) errors.push(`${relative}: ${label}`);
+  }
   if (isRuntimeInstruction) {
     for (const [pattern, label] of runtimeForbidden) if (pattern.test(text)) errors.push(`${relative}: ${label}`);
     if (relative.endsWith('.md') && vietnameseSignals.test(text)) errors.push(`${relative}: reusable runtime instructions should be English-first`);
   }
 }
+
+const retiredMetadataSignals = /external[- ]worker|cross[- ]runtime|agent-bridge/i;
 for (const relative of ['.claude-plugin/plugin.json', '.claude-plugin/marketplace.json']) {
   const file = path.join(root, relative);
   if (!fs.existsSync(file)) continue;
-  try { JSON.parse(fs.readFileSync(file, 'utf8')); } catch (error) { errors.push(`${relative}: invalid JSON (${error.message})`); }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (retiredMetadataSignals.test(JSON.stringify(parsed))) {
+      errors.push(`${relative}: plugin metadata advertises retired external/cross-runtime execution`);
+    }
+  } catch (error) {
+    errors.push(`${relative}: invalid JSON (${error.message})`);
+  }
 }
+
 if (errors.length) { console.error('Public validation FAILED:\n- ' + errors.join('\n- ')); process.exit(1); }
 console.log('Public validation PASS');
