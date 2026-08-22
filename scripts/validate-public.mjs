@@ -46,6 +46,11 @@ const globalForbidden = [
   [/\/(?:Users|home)\/[A-Za-z0-9._-]+\//i, 'machine-specific home path'],
 ];
 const runtimeForbidden = [[/skills\/[a-z0-9-]+\.md\b/i, 'legacy flat skill path']];
+const architectureForbidden = [
+  [/worker[- ]profiles?/i, 'retired worker-profile routing concept'],
+  [/AGENT_BRIDGE_WORKER_CONFIG/i, 'retired worker-profile configuration variable'],
+];
+const activeArchitectureDocs = new Set(['README.md', 'AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md']);
 const vietnameseSignals = /\b(?:Mục đích|Dùng khi|Nguyên tắc|Không|Nếu|Khi nào|Trước khi|Sau khi|Đây là|phải|được)\b/i;
 for (const file of walk(root)) {
   const relative = path.relative(root, file).replaceAll('\\', '/');
@@ -54,10 +59,19 @@ for (const file of walk(root)) {
   const text = fs.readFileSync(file, 'utf8');
   for (const [pattern, label] of globalForbidden) if (pattern.test(text)) errors.push(`${relative}: ${label}`);
   const isRuntimeInstruction = relative.startsWith('skills/');
+  const isActiveArchitecture = isRuntimeInstruction || activeArchitectureDocs.has(relative);
+  if (isActiveArchitecture) {
+    for (const [pattern, label] of architectureForbidden) if (pattern.test(text)) errors.push(`${relative}: ${label}`);
+  }
   if (isRuntimeInstruction) {
     for (const [pattern, label] of runtimeForbidden) if (pattern.test(text)) errors.push(`${relative}: ${label}`);
     if (relative.endsWith('.md') && vietnameseSignals.test(text)) errors.push(`${relative}: reusable runtime instructions should be English-first`);
   }
+}
+const directDispatcher = path.join(skillsRoot, 'agent-bridge', 'dispatch-direct.mjs');
+if (fs.existsSync(directDispatcher)) {
+  const directText = fs.readFileSync(directDispatcher, 'utf8');
+  if (/\bdefaultModel\b/.test(directText)) errors.push('skills/agent-bridge/dispatch-direct.mjs: external model must stay explicit');
 }
 for (const relative of ['.claude-plugin/plugin.json', '.claude-plugin/marketplace.json']) {
   const file = path.join(root, relative);
