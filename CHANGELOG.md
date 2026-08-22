@@ -9,13 +9,15 @@ CoMind Kit uses Semantic Versioning for tagged releases. Until the first tag is 
 ### Added
 
 - `bounded-code-worker` as the canonical role for one clearly owned implementation/refactor slice.
-- Public validation for canonical skill structure, private-reference leaks, legacy flat paths, English-first runtime instructions, absence of permanent specialist agent wrappers, and absence of cross-runtime bridge regressions.
+- Public validation for canonical skill structure, private-reference leaks, legacy flat paths, English-first runtime instructions, absence of permanent specialist agent wrappers/runtime-specific agent directories, absence of cross-runtime bridge regressions, and clean plugin metadata.
+- Native installation smoke coverage for Claude Code, Cursor, Codex, and Grok Build using the pinned Agent Skills CLI.
 
 ### Changed
 
 - `senior-dev` is strictly the accountable main owner for authority, architecture, integration, and final decision; bounded implementation uses `bounded-code-worker` or another explicit bounded role.
 - `coding-agent-handoff` owns worker ownership/task-packet/native-dispatch/return protocol; `llm-resource-governor` remains the single source for fan-out, context/output budgets, escalation, and evidence reuse.
 - Canonical execution is Agent/Skill-first and runtime-native. The runtime in which a skill is installed owns context/subagent/tool execution.
+- Public plugin/marketplace metadata now describes only the runtime-native Agent Skill toolkit and no longer advertises retired external-worker execution.
 - Public-safe skill text is canonical instead of duplicated under a public skill overlay; only narrow private-reference sanitizers remain.
 - Cross-skill references use installed skill names instead of legacy repository paths.
 
