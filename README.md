@@ -78,10 +78,10 @@ Claude Code only:
 npx -y skills@1.5.22 add otis226/comind-kit --agent claude-code
 ```
 
-Claude Code + Cursor + Codex:
+Claude Code + Cursor + Codex + Grok Build:
 
 ```bash
-npx -y skills@1.5.22 add otis226/comind-kit --global --skill '*' --agent claude-code --agent cursor --agent codex --yes
+npx -y skills@1.5.22 add otis226/comind-kit --global --skill '*' --agent claude-code --agent cursor --agent codex --agent grok --yes
 ```
 
 If you want a task handled in another runtime, start that runtime directly and invoke the same Agent Skill/task packet there. CoMind Kit does not spawn external CLIs, proxy credentials, select models, or maintain provider routing.
