@@ -2,13 +2,13 @@
 
 ## Purpose
 
-This skill is the handoff protocol for bounded worker execution. It does not own architecture, fan-out policy, provider/model selection, or final product acceptance.
+This skill is the handoff protocol for bounded worker execution. It does not own architecture, fan-out policy, runtime/provider/model selection, or final product acceptance.
 
 Use it after the main owner has decided that delegation is worthwhile.
 
 Apply `llm-resource-governor` for whether to delegate, concurrency/fan-out, context/output budgets, escalation discipline, and evidence reuse.
 
-Native role execution is the default. Use `agent-bridge` only when the caller deliberately chooses an external runtime/model for the already-selected role.
+Execution stays inside the current runtime using that runtime's native isolated context, subagent, or equivalent mechanism.
 
 ## 1. Define ownership before dispatch
 
@@ -64,45 +64,19 @@ RETURN CONTRACT
 
 Prefer exact paths, SHAs, identifiers, and concise authority summaries over copied conversation history.
 
-## 3. Dispatch the role
+## 3. Dispatch the role natively
 
-Select the Agent Skill or explicit agent definition first. Provider/model choice is not part of the role contract.
-
-Normal path:
+Select the Agent Skill or explicit agent definition first, then use the current runtime's native isolation mechanism.
 
 ```text
 selected role
-→ runtime's native isolated specialist/context when available
+→ native context / subagent / equivalent runtime mechanism
 → compact result/evidence
 ```
 
-Optional external path, only when there is a concrete reason to use another runtime/model:
+CoMind does not launch another coding runtime, proxy credentials, select a provider/model, or maintain a role-to-provider mapping.
 
-```text
-selected role
-→ agent-bridge + explicit --sdk + --model
-→ external worker
-```
-
-Do not route every delegation through `agent-bridge`. Do not infer an external provider from the role name, and do not keep a hidden role-to-provider mapping.
-
-When Agent Bridge is used, interpret its result as:
-
-```text
-NATIVE
-→ no external runtime was selected; use the role natively
-
-OK
-→ selected external worker completed and returned a result
-
-BLOCKED
-→ resolve the explicitly selected route's credential/capability blocker or escalate
-
-BACKEND_FAILED
-→ inspect the bounded external failure; retry only when useful
-```
-
-Never silently replace a BLOCKED/failed external route with another provider/model.
+If the user deliberately wants another runtime, preserve the same task packet and role contract, then invoke them from that runtime directly outside this handoff workflow.
 
 ## 4. Worker return contracts
 
