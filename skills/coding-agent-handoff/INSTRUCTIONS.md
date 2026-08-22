@@ -2,11 +2,13 @@
 
 ## Purpose
 
-This skill is the handoff protocol for bounded worker execution. It does not own architecture, fan-out policy, model/provider selection, or final product acceptance.
+This skill is the handoff protocol for bounded worker execution. It does not own architecture, fan-out policy, provider/model selection, or final product acceptance.
 
 Use it after the main owner has decided that delegation is worthwhile.
 
-Apply `llm-resource-governor` for whether to delegate, concurrency/fan-out, context/output budgets, escalation discipline, and evidence reuse. Use `agent-bridge` for configured external execution.
+Apply `llm-resource-governor` for whether to delegate, concurrency/fan-out, context/output budgets, escalation discipline, and evidence reuse.
+
+Native role execution is the default. Use `agent-bridge` only when the caller deliberately chooses an external runtime/model for the already-selected role.
 
 ## 1. Define ownership before dispatch
 
@@ -62,29 +64,45 @@ RETURN CONTRACT
 
 Prefer exact paths, SHAs, identifiers, and concise authority summaries over copied conversation history.
 
-## 3. Dispatch by role, not provider/model
+## 3. Dispatch the role
 
-Invoke the required agent/skill name through `agent-bridge`.
+Select the Agent Skill or explicit agent definition first. Provider/model choice is not part of the role contract.
 
-Normal orchestration should not pass `--sdk` or `--model`; those are deliberate one-off debug/experiment overrides.
+Normal path:
 
-Interpret route results:
+```text
+selected role
+→ runtime's native isolated specialist/context when available
+→ compact result/evidence
+```
+
+Optional external path, only when there is a concrete reason to use another runtime/model:
+
+```text
+selected role
+→ agent-bridge + explicit --sdk + --model
+→ external worker
+```
+
+Do not route every delegation through `agent-bridge`. Do not infer an external provider from the role name, and do not keep a hidden role-to-provider mapping.
+
+When Agent Bridge is used, interpret its result as:
 
 ```text
 NATIVE
-→ use the runtime's normal native isolated specialist for that role
+→ no external runtime was selected; use the role natively
 
 OK
-→ consume the compact result/evidence
+→ selected external worker completed and returned a result
 
 BLOCKED
-→ resolve the declared config/capability/credential blocker or escalate
+→ resolve the explicitly selected route's credential/capability blocker or escalate
 
 BACKEND_FAILED
-→ inspect the bounded failure; retry only when useful
+→ inspect the bounded external failure; retry only when useful
 ```
 
-Never silently replace a BLOCKED configured worker with another third-party provider.
+Never silently replace a BLOCKED/failed external route with another provider/model.
 
 ## 4. Worker return contracts
 
