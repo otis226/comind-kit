@@ -18,29 +18,40 @@ jobs:
           node-version: '22'
       - name: Validate public distribution
         run: node scripts/validate-public.mjs
-      - name: Smoke install current checkout with Agent Skills CLI
+      - name: Smoke install current checkout across native runtimes
         shell: bash
         run: |
           set -euo pipefail
-          sandbox="$(mktemp -d)"
-          cd "$sandbox"
-          npx -y skills@1.5.22 add "$GITHUB_WORKSPACE" --skill '*' --agent claude-code --copy --yes
-          for skill in \
-            bounded-code-worker \
-            coding-agent-handoff \
-            design-parity \
-            evidence-transport \
-            finalize-workstream \
-            llm-resource-governor \
-            pixel-parity-calibration \
-            product-ui-critique \
-            runtime-regression \
-            senior-dev \
-            ui-design-architect \
-            ui-design-authority \
-            ui-review \
-            ui-runtime-reviewer \
+          skills=(
+            bounded-code-worker
+            coding-agent-handoff
+            design-parity
+            evidence-transport
+            finalize-workstream
+            llm-resource-governor
+            pixel-parity-calibration
+            product-ui-critique
+            runtime-regression
+            senior-dev
+            ui-design-architect
+            ui-design-authority
+            ui-review
+            ui-runtime-reviewer
             ui-visual-reviewer
-          do
-            test -f ".claude/skills/$skill/SKILL.md"
+          )
+
+          for agent in claude-code cursor codex grok; do
+            sandbox="$(mktemp -d)"
+            cd "$sandbox"
+            npx -y skills@1.5.22 add "$GITHUB_WORKSPACE" --skill '*' --agent "$agent" --copy --yes
+
+            case "$agent" in
+              claude-code) target='.claude/skills' ;;
+              cursor|codex) target='.agents/skills' ;;
+              grok) target='.grok/skills' ;;
+            esac
+
+            for skill in "${skills[@]}"; do
+              test -f "$target/$skill/SKILL.md"
+            done
           done
