@@ -1,21 +1,20 @@
 ---
 name: llm-resource-governor
 description: >-
-  Use when a coding/review workflow may spawn workers, accumulate large context, or consume scarce premium-model quota. Decide when bounded work should be offloaded, keep worker context/output compact, and escalate only when earned. Choose roles by capability; keep any external runtime/model selection explicit rather than inferred from model economics.
+  Use when a coding/review workflow may spawn workers, accumulate large context, or consume scarce owner quota. Decide when bounded work should be offloaded, keep worker context/output compact, and escalate only when earned. Choose roles by capability; runtime/provider/model selection is outside this skill.
 ---
 
 <!-- comind-managed-skill: llm-resource-governor -->
 
 # LLM Resource Governor
 
-Preserve delivery quality while reducing unnecessary premium-owner token burn.
+Preserve delivery quality while reducing unnecessary owner token/context burn.
 
 ```text
-PREMIUM OWNER THINKS / DECIDES / INTEGRATES
+MAIN OWNER THINKS / DECIDES / INTEGRATES
 BOUNDED WORKERS READ / WRITE / REVIEW
 AGENT SKILL / AGENT DEFINES THE ROLE
-NATIVE EXECUTION BY DEFAULT
-EXTERNAL RUNTIME/MODEL ONLY WHEN EXPLICITLY CHOSEN
+CURRENT RUNTIME EXECUTES NATIVELY
 MINIMUM SUFFICIENT CONTEXT
 COMPACT RESULTS
 ESCALATION IS EARNED
@@ -26,45 +25,27 @@ QUALITY GATES STAY
 
 The selected Agent Skill or explicit agent definition answers **WHICH role/behavior should execute?**
 
-`agent-bridge` answers **HOW is an explicitly selected external worker executed safely?**
+The current runtime answers **HOW that role executes** through its native context/subagent/tooling.
 
 Do not collapse these responsibilities.
 
-## 1. Do not infer model economics
+## 1. Runtime selection is out of scope
 
-Do not estimate price or scarcity from vendor/model names.
-
-A model alias may point to:
-
-- a prepaid subscription;
-- a free or promotional gateway;
-- a third-party API;
-- a private proxy;
-- a differently priced provider;
-- another model entirely behind a compatible endpoint.
-
-Therefore delegation is not:
-
-```text
-inspect model name
-→ guess cheap/expensive
-→ select provider
-```
+Do not infer price, scarcity, capability, or preferred provider from model/vendor names and do not implement runtime routing here.
 
 Delegation is:
 
 ```text
 resolve whether delegation helps
 → choose the correct role/skill
-→ run it natively by default
-→ if external execution is deliberately useful, choose runtime/model explicitly
+→ execute it natively in the current runtime
 ```
 
-Do not silently substitute another provider/model because it appears cheaper, stronger, or more familiar.
+If the user deliberately chooses another runtime, preserve the role/task packet and run it from that runtime directly. CoMind does not spawn or proxy between runtimes.
 
 ## 2. Main owner responsibility
 
-Keep one main/premium owner responsible for:
+Keep one main owner responsible for:
 
 - resolving project/source/business/design authority;
 - deciding scope and risk;
@@ -82,48 +63,23 @@ Strong offload candidates:
 - isolated implementation with clear acceptance rules;
 - repetitive refactor/migration within explicit boundaries;
 - screenshot/visual UI review;
-- runtime/browser evidence collection when the selected execution path has verified browser capability;
+- runtime/browser evidence collection when the current runtime has the required capability;
 - targeted test/log/console/network evidence.
 
 Do not offload a tiny task when packet construction/integration would cost more than doing it locally.
 
-## 3. Role-first execution
+## 3. Role-first native execution
 
-Choose the role by concern and authority, not by provider.
+Choose the role by concern and authority.
 
 ```text
 main owner
 → choose Agent Skill / explicit agent
-→ NATIVE by default
+→ current runtime native context/subagent/tooling
+→ compact result
 ```
 
-When an external runtime materially improves isolation, capability, quota use, or execution fit:
-
-```text
-chosen role
-→ agent-bridge + explicit runtime/model
-→ external worker
-```
-
-Do not maintain or infer a hidden role-to-provider mapping in orchestration logic.
-
-Interpret Agent Bridge results as:
-
-```text
-NATIVE
-→ use the normal native specialist/subagent/context
-
-OK
-→ consume worker result
-
-BLOCKED
-→ resolve the explicit route's credential/capability blocker or escalate
-
-BACKEND_FAILED
-→ inspect bounded failure; retry only when useful
-```
-
-Do not silently route a BLOCKED external worker to another provider.
+No hidden role-to-provider mapping, cross-runtime execution adapter, or provider substitution belongs in CoMind orchestration.
 
 ## 4. Minimum sufficient context
 
@@ -158,7 +114,7 @@ Do not repeat source text unless it is evidence.
 
 ## 5. Output budget
 
-Cheap execution is not enough if the premium owner must ingest a huge transcript.
+Cheap execution is not enough if the main owner must ingest a huge transcript.
 
 Default reviewer budget:
 
@@ -231,7 +187,7 @@ Before opening another context ask:
 
 ```text
 Can it proceed independently now?
-Will it preserve meaningful owner quota or shorten critical path?
+Will it preserve meaningful owner context/quota or shorten critical path?
 Is ownership non-overlapping?
 Is context compact?
 Will the result also be compact?
@@ -257,11 +213,7 @@ neither
 → neither UI reviewer
 ```
 
-Choose these roles independently from provider/model choice.
-
-Browser/runtime reviewers must use an execution path with verified browser capability. If the selected path cannot prove it, keep the result BLOCKED rather than substituting unevidenced review.
-
-Browser-heavy workers are short-lived: exact route/scenario in, compact verdict/evidence out, then end.
+Browser/runtime reviewers must use capabilities actually available in the current runtime. If required evidence cannot be produced, keep the result BLOCKED rather than inventing or substituting evidence.
 
 ## 9. Coding offload
 
@@ -312,6 +264,6 @@ Discard stale tool chatter and superseded debugging.
 
 Resource optimization never justifies skipping required product/business/security/release gates.
 
-Do not route destructive deploy/release/credential/database mutation through an arbitrary external worker unless the project explicitly approves that execution path.
+Do not use delegation to bypass capability, credential, security, or destructive-operation boundaries.
 
-The governor controls delegation discipline. Role definitions live in agents/skills. External runtime/model selection stays explicit at execution time.
+The governor controls delegation discipline. Role definitions live in agents/skills. Runtime execution remains native to the runtime the user is currently using.
