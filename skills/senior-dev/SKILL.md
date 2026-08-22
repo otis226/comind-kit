@@ -22,13 +22,13 @@ llm-resource-governor
 = when delegation is worthwhile + fan-out/context/output/escalation discipline
 
 coding-agent-handoff
-= ownership + task packet + dispatch/result protocol
+= ownership + task packet + native dispatch/result protocol
 
 Agent Skill / explicit agent
 = role + behavior contract
 
-agent-bridge
-= optional explicit external execution transport
+current runtime
+= native context/subagent/tool execution
 
 bounded-code-worker
 = one bounded implementation slice
@@ -72,11 +72,11 @@ interaction/state/navigation/form/async/runtime
 → ui-runtime-reviewer
 ```
 
-Choose the role, not the provider/model.
+Choose the role by concern and authority. Execute it using the current runtime's native context/subagent/tooling.
 
-Native execution is the default. If an external runtime materially improves isolation, capability, or resource use, select that runtime/model explicitly at dispatch time. Do not infer model price, cost tier, or scarcity from vendor/model names and do not maintain hidden role-to-provider mappings.
+CoMind does not select another provider/model or spawn another coding runtime. If the user wants work performed in another runtime, preserve the role/task packet and invoke it from that runtime directly.
 
-Use `coding-agent-handoff` to define ownership, task packet, dispatch, and return contract.
+Use `coding-agent-handoff` to define ownership, task packet, native dispatch, and return contract.
 
 ## 4. Keep architecture and shared contracts centralized
 
