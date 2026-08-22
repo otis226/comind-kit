@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Agent Bridge dispatcher.
-// Runs an existing agent definition on a non-native coding CLI (SDK backend).
+// Agent Bridge direct dispatcher.
+// Runs an existing agent definition or Agent Skill on a non-native coding CLI.
 //
 // Usage:
-//   node dispatch.mjs (--agent <name> | --skill <name>) --sdk <backend>
-//                     [--model <id>] [--effort <level>]
-//                     (--scope <text> | --scope-file <path>)
-//                     [--needs-browser] [--readonly auto|yes|no] [--schema <path>]
-//                     [--cwd <dir>] [--max-turns <n>] [--raw] [--dry-run]
+//   node dispatch-direct.mjs (--agent <name> | --skill <name>) --sdk <backend> --model <id>
+//                            [--effort <level>]
+//                            (--scope <text> | --scope-file <path>)
+//                            [--needs-browser] [--readonly auto|yes|no] [--schema <path>]
+//                            [--cwd <dir>] [--max-turns <n>] [--raw] [--dry-run]
 //
 // Exit codes: 0 ok | 2 usage/resolution error | 3 BLOCKED (capability gate) | 4 backend failure
 
@@ -28,8 +28,6 @@ const BACKENDS = {
     bin: 'grok',
     enabled: true,
     browser: { type: 'mcp-doctor', server: 'chrome-devtools' },
-    // Keep this pinned so a bridged run cannot drift with ~/.grok/config.toml.
-    defaultModel: 'grok-4.6',
     build(ctx) {
       const args = [
         '--prompt-file', ctx.promptFile,
@@ -55,7 +53,6 @@ const BACKENDS = {
     bin: 'codex',
     enabled: true,
     browser: 'unverified',
-    defaultModel: 'gpt-5.6-sol',
     build(ctx) {
       const args = ['exec', '-'];
       args.push('-s', ctx.readonly ? 'read-only' : 'workspace-write');
@@ -72,7 +69,6 @@ const BACKENDS = {
     bin: 'cursor-agent',
     enabled: false,
     browser: 'unverified',
-    defaultModel: null,
     build() { throw new Error('cursor backend is not enabled yet'); },
   },
 };
@@ -130,41 +126,65 @@ function probeBrowser(backend, launch, cwd) {
 }
 
 /* ------------------------------------------------- agent definition resolving */
-function projectAgentDirs(baseDir) {
-  const dirs = [];
+function projectAgentGroups(baseDir) {
+  const groups = [];
   let dir = path.resolve(baseDir || process.cwd());
   for (;;) {
-    dirs.push(path.join(dir, '.claude', 'agents'));
-    dirs.push(path.join(dir, '.grok', 'agents'));
+    groups.push([
+      path.join(dir, '.claude', 'agents'),
+      path.join(dir, '.grok', 'agents'),
+    ]);
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  return dirs;
+  return groups;
 }
 
-function agentSearchDirs(baseDir) {
+function agentSearchGroups(baseDir) {
   const claudeHome = process.env.CLAUDE_CONFIG_DIR || path.join(HOME, '.claude');
-  const dirs = [
-    ...projectAgentDirs(baseDir),
+  const groups = projectAgentGroups(baseDir);
+  groups.push([
     path.join(claudeHome, 'agents'),
     path.join(HOME, '.grok', 'agents'),
-  ];
+  ]);
 
-  // Bounded scan for plugin-provided agent definitions.
+  // Plugin-provided definitions are one lower-priority scope. Duplicate names across
+  // plugins are ambiguous and must be selected explicitly with --agent-file.
+  const pluginDirs = [];
   const walk = (dir, depth) => {
     if (depth > 6 || !fs.existsSync(dir)) return;
     let entries = [];
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
       if (!e.isDirectory()) continue;
-      if (e.name === 'agents') dirs.push(path.join(dir, e.name));
+      if (e.name === 'agents') pluginDirs.push(path.join(dir, e.name));
       else walk(path.join(dir, e.name), depth + 1);
     }
   };
   walk(path.join(claudeHome, 'plugins'), 0);
+  if (pluginDirs.length) groups.push(pluginDirs);
 
-  return [...new Set(dirs)].filter((d) => fs.existsSync(d));
+  return groups
+    .map((group) => [...new Set(group)].filter((d) => fs.existsSync(d)))
+    .filter((group) => group.length);
+}
+
+function matchesInAgentDir(name, dir) {
+  const matches = new Set();
+  const byFilename = path.join(dir, name + '.md');
+  if (fs.existsSync(byFilename)) matches.add(byFilename);
+
+  let entries = [];
+  try { entries = fs.readdirSync(dir); } catch { return []; }
+  for (const entry of entries) {
+    if (!entry.endsWith('.md')) continue;
+    const candidate = path.join(dir, entry);
+    try {
+      if (readAgentDefinition(candidate).meta.name === name) matches.add(candidate);
+    } catch { /* unreadable definition: skip */ }
+  }
+  return [...matches];
 }
 
 function resolveAgentFile(name, explicit, baseDir) {
@@ -172,23 +192,22 @@ function resolveAgentFile(name, explicit, baseDir) {
     if (!fs.existsSync(explicit)) fail(2, 'ERROR', 'Agent file not found: ' + explicit);
     return explicit;
   }
-  const dirs = agentSearchDirs(baseDir);
-  // Resolve per directory in priority order: filename first, then frontmatter name.
-  for (const dir of dirs) {
-    const byFilename = path.join(dir, name + '.md');
-    if (fs.existsSync(byFilename)) return byFilename;
-    let entries = [];
-    try { entries = fs.readdirSync(dir); } catch { continue; }
-    for (const entry of entries) {
-      if (!entry.endsWith('.md')) continue;
-      const candidate = path.join(dir, entry);
-      try {
-        if (readAgentDefinition(candidate).meta.name === name) return candidate;
-      } catch { /* unreadable definition: skip */ }
+
+  const groups = agentSearchGroups(baseDir);
+  const searched = [];
+  for (const group of groups) {
+    searched.push(...group);
+    const matches = [...new Set(group.flatMap((dir) => matchesInAgentDir(name, dir)))];
+    if (matches.length > 1) {
+      fail(2, 'ERROR',
+        'Agent "' + name + '" is ambiguous in the same resolution scope. Matches: ' + matches.join(', ') +
+        '. Pass --agent-file explicitly so runtime-specific directory order cannot choose silently.');
     }
+    if (matches.length === 1) return matches[0];
   }
+
   fail(2, 'ERROR',
-    'No definition found for agent "' + name + '". Searched: ' + dirs.join(', ') +
+    'No definition found for agent "' + name + '". Searched: ' + searched.join(', ') +
     '. Built-in agents without a definition file cannot be bridged; pass --agent-file explicitly.');
 }
 
@@ -266,6 +285,7 @@ const opts = parseArgs(process.argv.slice(2));
 const hasAgentAnchor = Boolean(opts.agent || opts.agentFile);
 if (hasAgentAnchor === Boolean(opts.skill)) fail(2, 'ERROR', 'Pass exactly one anchor: --agent/--agent-file or --skill');
 if (!opts.sdk) fail(2, 'ERROR', 'Missing --sdk');
+if (!opts.model) fail(2, 'ERROR', 'External execution requires an explicit --model.');
 if (!['auto', 'yes', 'no'].includes(opts.readonly)) fail(2, 'ERROR', '--readonly must be auto, yes, or no');
 if (opts.maxTurns !== undefined && (!Number.isInteger(opts.maxTurns) || opts.maxTurns < 1)) {
   fail(2, 'ERROR', '--max-turns must be a positive integer');
@@ -309,11 +329,7 @@ if (hasAgentAnchor) {
 }
 
 const readonly = deriveReadonly(parsed.meta, opts.readonly);
-const model = opts.model || backend.defaultModel || null;
-if (!model) {
-  fail(2, 'ERROR', 'Backend "' + opts.sdk + '" has no pinned default model; pass --model explicitly.',
-    { agent: agentName, sdk: opts.sdk });
-}
+const model = opts.model;
 
 let scope = '';
 try {
