@@ -25,6 +25,9 @@ function walk(dir) {
 const skillsRoot = path.join(root, 'skills');
 if (!fs.existsSync(skillsRoot)) errors.push('Missing skills/ directory.');
 else {
+  if (fs.existsSync(path.join(skillsRoot, 'agent-bridge'))) {
+    errors.push('Retired cross-runtime execution bridge must not exist in the public skill set.');
+  }
   for (const entry of fs.readdirSync(skillsRoot, { withFileTypes: true })) {
     if (entry.isFile() && entry.name.endsWith('.md')) errors.push(`Legacy flat skill file is not allowed: ${entry.name}`);
     if (!entry.isDirectory()) continue;
@@ -49,6 +52,7 @@ const runtimeForbidden = [[/skills\/[a-z0-9-]+\.md\b/i, 'legacy flat skill path'
 const architectureForbidden = [
   [/worker[- ]profiles?/i, 'retired worker-profile routing concept'],
   [/AGENT_BRIDGE_WORKER_CONFIG/i, 'retired worker-profile configuration variable'],
+  [/\bagent-bridge\b/i, 'retired cross-runtime execution bridge'],
 ];
 const activeArchitectureDocs = new Set(['README.md', 'AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md']);
 const vietnameseSignals = /\b(?:Mục đích|Dùng khi|Nguyên tắc|Không|Nếu|Khi nào|Trước khi|Sau khi|Đây là|phải|được)\b/i;
@@ -67,11 +71,6 @@ for (const file of walk(root)) {
     for (const [pattern, label] of runtimeForbidden) if (pattern.test(text)) errors.push(`${relative}: ${label}`);
     if (relative.endsWith('.md') && vietnameseSignals.test(text)) errors.push(`${relative}: reusable runtime instructions should be English-first`);
   }
-}
-const directDispatcher = path.join(skillsRoot, 'agent-bridge', 'dispatch-direct.mjs');
-if (fs.existsSync(directDispatcher)) {
-  const directText = fs.readFileSync(directDispatcher, 'utf8');
-  if (/\bdefaultModel\b/.test(directText)) errors.push('skills/agent-bridge/dispatch-direct.mjs: external model must stay explicit');
 }
 for (const relative of ['.claude-plugin/plugin.json', '.claude-plugin/marketplace.json']) {
   const file = path.join(root, relative);
