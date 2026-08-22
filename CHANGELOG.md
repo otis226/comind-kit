@@ -18,6 +18,9 @@ CoMind Kit uses Semantic Versioning for tagged releases. Until the first tag is 
 - `senior-dev` is strictly the accountable main owner for authority, architecture, integration, and final decision; bounded implementation uses `bounded-code-worker` or another explicit bounded role.
 - `coding-agent-handoff` owns worker ownership/task-packet/dispatch/return protocol; `llm-resource-governor` remains the single source for fan-out, context/output budgets, escalation, and evidence reuse.
 - Canonical execution is Agent/Skill-first and native-first. External runtime/model selection is visible only when explicitly requested at the Agent Bridge dispatch boundary.
+- Agent Bridge direct backends require an explicit model; hidden backend default models are not part of the execution contract.
+- Agent definitions with the same name in multiple runtime-specific directories at the same resolution scope are treated as ambiguous and require explicit `--agent-file` selection instead of silent directory precedence.
+- Public maintenance validation now rejects retired worker-profile routing concepts from active docs and runtime skill packages.
 - Public-safe skill text is canonical instead of duplicated under a public skill overlay; only narrow private-reference sanitizers remain.
 - Cross-skill references use installed skill names instead of legacy repository paths.
 - Agent Bridge and orchestration do not infer price/cost tier from vendor/model names and do not silently substitute another provider after a blocked or failed explicit route.
