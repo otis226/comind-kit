@@ -4,7 +4,7 @@ This file is the maintenance entrypoint for AI agents working on CoMind Kit itse
 
 ## Repository purpose
 
-CoMind Kit is a public, project-neutral collection of reusable Agent Skills plus optional explicit external-worker execution tooling.
+CoMind Kit is a public, project-neutral collection of reusable Agent Skills.
 
 `README.md` is human onboarding. Runtime workflow semantics belong in `skills/*`.
 
@@ -15,9 +15,9 @@ CoMind Kit is a public, project-neutral collection of reusable Agent Skills plus
 3. Resolve project-specific truth from the repository where an installed skill is used.
 4. Use `skills/<name>/SKILL.md` as the skill entrypoint; a sibling `INSTRUCTIONS.md` may hold a longer body.
 5. Reference sibling capabilities by installed skill name, never legacy flat paths.
-6. The skill is the canonical reusable role. Do not add permanent runtime-specific specialist agent copies when a fresh native context or `agent-bridge` can execute the skill.
-7. `llm-resource-governor` decides when delegation is useful. Native execution is the default. If external execution is deliberately chosen, the caller must select `--sdk` and `--model` explicitly; `agent-bridge` only executes that selected route.
-8. Do not add a persistent role-to-provider routing layer. Keep literal secrets out of skills, agent definitions, task packets, repository files, and CLI arguments; bind external credentials by environment-variable name where supported.
+6. The skill is the canonical reusable role. Do not add permanent runtime-specific specialist agent copies when a fresh native context/subagent can execute the skill.
+7. `llm-resource-governor` decides when delegation is useful. The current runtime executes the selected role through its native context/subagent/tooling.
+8. Do not add persistent role-to-provider routing or cross-runtime execution adapters. Keep literal secrets out of skills, agent definitions, task packets, and repository files.
 9. Preserve observation/inference/proposal/authority/evidence distinctions and do not weaken verification merely to obtain PASS.
 10. Update `README.md` and `CHANGELOG.md` when public behavior, install flow, skill set, or output contract materially changes.
 
