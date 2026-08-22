@@ -27,7 +27,9 @@ skills/<name>/
 
 Reference sibling capabilities by installed skill name such as `design-parity` or `runtime-regression`. Do not introduce legacy flat references.
 
-The skill is the role. Do not add permanent Claude/Cursor-specific specialist agent wrappers. Use a fresh native context or deterministic `agent-bridge` worker profile when isolation/external execution is needed.
+The skill is the reusable role. Do not add permanent Claude/Cursor/Grok-specific specialist agent wrappers. Use a fresh native context by default. When external execution is genuinely useful, use `agent-bridge` with an explicitly selected runtime/model instead of adding a persistent role-to-provider mapping layer.
+
+Project/user agent definitions may compose skills with project-specific instructions, but they are role contracts rather than provider-routing configuration.
 
 ## Pull requests
 
