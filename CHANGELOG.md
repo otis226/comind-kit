@@ -14,8 +14,11 @@ CoMind Kit uses Semantic Versioning for tagged releases. Until the first tag is 
 
 ### Changed
 
+- LEAN is now the default coding execution mode: centralize root-cause/contract reasoning, parallelize independent bounded coding slices when useful, finish the scoped implementation before one consolidated risk-based verification gate, and keep review/browser/runtime workers escalation-only by default. FULL remains an explicit higher-autonomy, higher-cost mode.
 - `senior-dev` is strictly the accountable main owner for authority, architecture, integration, and final decision; bounded implementation uses `bounded-code-worker` or another explicit bounded role.
-- `coding-agent-handoff` owns worker ownership/task-packet/native-dispatch/return protocol; `llm-resource-governor` remains the single source for fan-out, context/output budgets, escalation, and evidence reuse.
+- `coding-agent-handoff` owns worker ownership/task-packet/native-dispatch/return protocol plus LEAN verification sequencing; `llm-resource-governor` remains the source for execution mode, fan-out, context/output budgets, escalation, verification economics, and evidence reuse.
+- `bounded-code-worker` now writes the complete owned slice before final targeted verification by default, avoiding habitual repeated code/test loops and rerunning only invalidated checks after a failure.
+- Subjective UI/UX/product review and browser/runtime evidence are no longer default LEAN coding completion rituals; use the product-review owner/manual review surface unless runtime evidence is explicitly required or needed to resolve a concrete uncertainty.
 - Canonical execution is Agent/Skill-first and runtime-native. The runtime in which a skill is installed owns context/subagent/tool execution.
 - Public plugin/marketplace metadata now describes only the runtime-native Agent Skill toolkit and no longer advertises retired external-worker execution.
 - Public-safe skill text is canonical instead of duplicated under a public skill overlay; only narrow private-reference sanitizers remain.
