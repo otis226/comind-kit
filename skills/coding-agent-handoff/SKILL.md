@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff
 description: >-
-  Use when a main owner delegates bounded implementation, inspection, or review and needs an explicit ownership map, compact task packet, native role dispatch, and integration-ready return contract.
+  Use when a main owner delegates bounded implementation, inspection, or review and needs an explicit ownership map, compact task packet, native role dispatch, LEAN-aware verification sequencing, and integration-ready return contract.
 ---
 
 <!-- comind-managed-skill: coding-agent-handoff -->
@@ -13,8 +13,8 @@ Read `INSTRUCTIONS.md` in this skill directory and follow it as the complete wor
 Responsibility boundary:
 
 ```text
-llm-resource-governor decides WHEN to delegate
-coding-agent-handoff defines WHAT the worker owns/receives/returns
+llm-resource-governor decides EXECUTION MODE + WHEN to delegate
+coding-agent-handoff defines WHAT the worker owns/receives/returns + verification sequencing
 Agent Skill / explicit agent defines WHICH role/behavior executes
 current runtime executes HOW through its native context/subagent/tooling
 ```
