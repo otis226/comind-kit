@@ -19,7 +19,7 @@ SENIOR DEV
 = authority + decomposition + architecture + integration + final decision
 
 llm-resource-governor
-= when delegation is worthwhile + fan-out/context/output/escalation discipline
+= execution mode + when delegation is worthwhile + fan-out/context/output/escalation discipline
 
 coding-agent-handoff
 = ownership + task packet + native dispatch/result protocol
@@ -46,7 +46,30 @@ Before substantial implementation:
 - prefer live source/runtime evidence over stale reviews or chat memory;
 - ask only when a material product/business decision cannot be resolved from authority.
 
-## 2. Resolve design authority for UI work
+## 2. Choose execution mode
+
+Apply `llm-resource-governor` before opening broad worker/reviewer/runtime fan-out.
+
+Default to **LEAN**:
+
+```text
+main owner resolves root cause / authority / shared contracts once
+→ acceptance/manual scenarios are explicit before coding
+→ bounded coding slices may run in parallel when independent
+→ integrate once
+→ one consolidated risk-based machine-verification gate
+→ hand off the manual/product review surface
+```
+
+LEAN means the main owner owns the outcome, not necessarily every line of code. Use `bounded-code-worker` for independent implementation slices that materially shorten the critical path.
+
+Do not use repeated independent investigation, UI/runtime reviewers, or browser/MCP review as default LEAN completion rituals.
+
+Use **FULL** only when explicitly requested by the user/project, or when the task is intentionally delegated as a broader autonomous run while the normal product/runtime operator is unavailable. FULL may add independent review, browser/runtime evidence, broader regression, and correction loops as useful.
+
+A hard task does not automatically become FULL. Escalate the concrete uncertainty first while remaining LEAN unless the requested cost/autonomy mode changes.
+
+## 3. Resolve design authority for UI work
 
 For meaningful user-visible UI changes, apply `ui-design-authority` before implementation.
 
@@ -54,7 +77,9 @@ Use `ui-design-architect` only when a fresh independent design-authority pass is
 
 Do not let an implementation worker invent product business rules or a new visual language.
 
-## 3. Decide direct work vs delegation
+In LEAN, subjective visual/UX/product acceptance is normally performed by the product-review owner after the integrated candidate is ready. Do not launch `ui-visual-reviewer`, `ui-runtime-reviewer`, or browser tooling solely to simulate subjective product judgment when a manual review surface is available.
+
+## 4. Decide direct work vs delegation
 
 Delegate only when the work is bounded enough that another worker can proceed independently with a compact packet and useful return.
 
@@ -62,7 +87,11 @@ Apply `llm-resource-governor` for the delegation decision and resource disciplin
 
 When delegating implementation, prefer the role `bounded-code-worker` unless the current project defines a more specific bounded role.
 
-For review/evidence, choose the role that matches the concern, for example:
+LEAN supports coding parallelism. After the main owner resolves shared contracts, independent frontend/backend/module slices may be dispatched concurrently, normally up to the LEAN fan-out budget defined by `llm-resource-governor`.
+
+Do not parallelize unresolved shared-contract work or several writers over the same shared region. Do not send multiple workers to rediscover the same root cause unless independent investigation is specifically justified.
+
+For review/evidence, choose the role that matches the concern when that review is actually required, for example:
 
 ```text
 visual/composition/style
@@ -78,7 +107,7 @@ CoMind does not select another provider/model or spawn another coding runtime. I
 
 Use `coding-agent-handoff` to define ownership, task packet, native dispatch, and return contract.
 
-## 4. Keep architecture and shared contracts centralized
+## 5. Keep architecture and shared contracts centralized
 
 The main owner retains responsibility for:
 
@@ -91,7 +120,16 @@ The main owner retains responsibility for:
 
 Do not delegate a supposedly bounded slice after discovering that it requires broad shared-contract ownership. Re-scope or escalate it.
 
-## 5. Integrate evidence, do not repeat bounded work
+Prefer contract-first parallelism:
+
+```text
+resolve invariant / contract
+→ freeze worker boundaries
+→ parallel implementation
+→ integrate
+```
+
+## 6. Integrate evidence, do not repeat bounded work
 
 Treat worker output as bounded evidence, not product completion.
 
@@ -104,25 +142,43 @@ When a worker returns sufficient evidence for its assigned concern:
 
 Reuse still-valid evidence across phases. If the candidate changes, rerun only affected evidence unless blast radius is unclear.
 
-## 6. Final verification and handoff
+## 7. Verification sequencing
 
-Run the project-required affected checks and any required independent visual/runtime/business verification on the integrated candidate.
+In LEAN, avoid habitual `code → test → code → test` loops.
+
+For each coherent task:
+
+1. derive acceptance/manual scenarios before implementation;
+2. complete the scoped implementation, including relevant automated test code;
+3. mechanically inspect the integrated diff;
+4. run one consolidated risk-based verification gate;
+5. after a failure, rerun only checks invalidated by the fix.
+
+Mid-implementation execution checks are justified only when the result is needed to continue, such as uncertain shared contracts, unknown baseline state, generated/migration output, or a genuine runtime blocker.
+
+Run independent machine checks concurrently when practical. Do not rerun full suites, typechecks, builds, or browser flows after every small edit merely for reassurance.
+
+## 8. Final verification and handoff
+
+Run the project-required affected checks and any review/evidence that is actually required by current authority, execution mode, or unresolved risk.
 
 Do not weaken tests, hide errors, or convert BLOCKED/NOT VERIFIED into PASS.
 
 Do not merge merely because AI/machine checks pass. Merge only when the user or current project authority explicitly authorizes it.
 
-For user-visible work, normally hand off:
+For user-visible LEAN work, normally hand off:
 
 ```text
 Candidate: <branch/state/SHA>
-Design authority: <mode | N/A>
+Implemented: <compact summary>
 Machine checks: <summary>
-Visual review: PASS | FAIL | BLOCKED | N/A
-Runtime review: PASS | FAIL | BLOCKED | N/A
-Manual review surface: <route/state | N/A>
-Known deltas/blockers: <list | NONE>
-Status: READY FOR MANUAL CHECK | BLOCKED
+Manual scenarios:
+- <scenario + expected result>
+Known risk/blockers: <list | NONE>
+Product review surface: <route/state/screenshot target | N/A>
+Status: READY FOR PRODUCT/MANUAL REVIEW | BLOCKED
 ```
+
+For FULL work, include the additional visual/runtime/reviewer evidence actually executed.
 
 Stop when the required candidate, evidence, and handoff are ready. Do not expand into unrelated refactors or optional polish.
