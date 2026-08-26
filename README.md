@@ -19,7 +19,7 @@ senior-dev
 = main owner / architecture / integration
 
 llm-resource-governor
-= WHEN delegation is worthwhile
+= execution mode + delegation/resource discipline
 
 coding-agent-handoff
 = WHAT the worker owns/receives/returns
@@ -36,6 +36,8 @@ bounded-code-worker
 
 Do not use `senior-dev` as a bounded coding worker. Keep the main owner as the owner; use `bounded-code-worker` for implementation slices.
 
+Default normal coding execution is **LEAN**: reason centrally, delegate only bounded independent coding slices when it materially helps, and verify after the scoped implementation. **FULL** is explicit when broader autonomous review/runtime evidence is intentionally requested.
+
 ## Main skills
 
 ### Delivery and worker execution
@@ -43,8 +45,8 @@ Do not use `senior-dev` as a bounded coding worker. Keep the main owner as the o
 | Skill | Use it when |
 |---|---|
 | `senior-dev` | Non-trivial feature/refactor/bug fix needs one accountable owner |
-| `llm-resource-governor` | Delegation may save context/quota or isolate evidence work |
-| `coding-agent-handoff` | A worker needs explicit ownership, packet, native dispatch, and return contract |
+| `llm-resource-governor` | Choose LEAN vs FULL, decide whether delegation helps, and keep fan-out/context/verification proportional |
+| `coding-agent-handoff` | A worker needs explicit ownership, packet, native dispatch, LEAN-aware verification, and return contract |
 | `bounded-code-worker` | One clear implementation/refactor slice should be delegated |
 | `finalize-workstream` | An accepted candidate is ready for authorized merge/finalization |
 
@@ -55,7 +57,7 @@ Do not use `senior-dev` as a bounded coding worker. Keep the main owner as the o
 | `ui-design-authority` | Resolve reference/system/product-derived/greenfield design authority |
 | `ui-design-architect` | A fresh read-only design-authority pass is useful |
 | `product-ui-critique` | Diagnose an existing screen conservatively |
-| `ui-review` | Choose review mode and prioritize actionable gaps |
+| `ui-review` | Deep-by-default UI/UX review with evidence labels and actionable verification contracts |
 | `ui-visual-reviewer` | Independent rendered visual verdict |
 | `ui-runtime-reviewer` | Independent interaction/runtime verdict |
 

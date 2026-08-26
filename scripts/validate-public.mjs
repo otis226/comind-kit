@@ -48,7 +48,12 @@ else {
     const skillText = fs.readFileSync(skillFile, 'utf8');
     const nameMatch = skillText.match(/^name:\s*([^\n]+)$/m);
     if (!nameMatch || nameMatch[1].trim() !== entry.name) errors.push(`Skill frontmatter name does not match directory: ${entry.name}`);
-    if (skillText.includes('INSTRUCTIONS.md') && !fs.existsSync(path.join(skillsRoot, entry.name, 'INSTRUCTIONS.md'))) errors.push(`SKILL.md references missing INSTRUCTIONS.md: ${entry.name}`);
+    const ownershipMarker = `<!-- comind-managed-skill: ${entry.name} -->`;
+    if (!skillText.includes(ownershipMarker)) errors.push(`Skill package missing CoMind ownership marker: ${entry.name}`);
+    const referencedSiblingDocs = [...skillText.matchAll(/`([A-Z0-9_-]+\\.md)`/g)].map((match) => match[1]);
+    for (const siblingDoc of new Set(referencedSiblingDocs)) {
+      if (!fs.existsSync(path.join(skillsRoot, entry.name, siblingDoc))) errors.push(`SKILL.md references missing ${siblingDoc}: ${entry.name}`);
+    }
   }
 }
 

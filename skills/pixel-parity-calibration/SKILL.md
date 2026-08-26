@@ -4,6 +4,8 @@ description: >-
   Use after structural visual parity passes but residual pixel mismatch remains and you need to distinguish product defects from intentional deltas, fixture/state differences, clock effects, or capture/render noise.
 ---
 
+<!-- comind-managed-skill: pixel-parity-calibration -->
+
 # pixel-parity-calibration
 
 Read `INSTRUCTIONS.md` in this skill directory and follow it as the complete workflow for this capability.

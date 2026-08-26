@@ -115,11 +115,51 @@ Judge **task-worker fit** from:
 
 Treat unknown capability conservatively rather than assuming either weakness or strength.
 
-A worker that has shown reliable contract retention and implementation judgment on comparable work may receive a larger bounded slice and more freedom over implementation sequencing. That does **not** grant authority to reinterpret business, product, design, security, or architecture decisions.
+### Higher demonstrated fit
 
-When fit is uncertain or prior evidence shows contract-retention problems, change the shape of execution rather than merely adding prose: shrink the slice, make KEEP/CHANGE/DO NOT CHANGE explicit, use observable acceptance scenarios, keep product/architecture decisions with the main owner, use checkpoints when needed, and keep context minimum-sufficient.
+A worker that has shown reliable contract retention and implementation judgment on comparable work may receive a larger bounded slice and more freedom over implementation sequencing.
 
-When a worker misses an explicit requirement, diagnose whether the failure is authority/context, execution/contract retention, tooling/environment, or verification. If the same class persists after the contract is clear, restructure execution instead of indefinitely lengthening prompts.
+That does **not** grant authority to reinterpret business, product, design, security, or architecture decisions. Acceptance and verification remain explicit.
+
+### Constrained or uncertain fit
+
+When fit is uncertain or prior evidence shows contract-retention problems, change the **shape of execution**, not merely the amount of prose:
+
+- reduce the slice to one coherent outcome;
+- make `KEEP / CHANGE / DO NOT CHANGE` boundaries explicit;
+- use observable acceptance scenarios rather than subjective wording such as `make it better`;
+- keep product/architecture decisions with the main owner;
+- use checkpoints when the next slice depends on the previous one being correct;
+- require evidence before advancing;
+- keep context minimum-sufficient instead of copying the whole conversation.
+
+A cheaper/smaller model can still be the right worker for a tightly bounded task. A stronger model can still fail when the contract is ambiguous, overloaded, or asks it to infer authority it does not own.
+
+### Adapt after misses; do not just prompt harder
+
+When a worker misses an explicit requirement, first diagnose the class of failure:
+
+```text
+missing / conflicting authority or context
+vs
+execution / contract-retention failure
+vs
+tool / environment limitation
+vs
+verification failure
+```
+
+If the same class of explicit acceptance rule is missed again after the contract is clear, do not keep appending corrective paragraphs indefinitely. Restructure execution instead:
+
+1. shrink the owned slice;
+2. move stable WHAT/WHY/acceptance into the persistent issue/task contract when useful;
+3. add a checkpoint with observable evidence;
+4. refresh the worker context if stale/overloaded;
+5. escalate to the main owner or a more suitable role/runtime/model when task-worker fit remains poor.
+
+There is no universal `two failures` rule. One high-consequence miss may justify immediate escalation; several low-risk polish misses may justify a bounded correction pass. Use severity, repeated error class, and evidence of fit.
+
+Longer prompts are not automatically safer. Preserve the minimum-sufficient-context rule; extra text that does not change authority, scope, acceptance, or evidence can reduce clarity for any model.
 
 ## 4. Fan-out and parallelism
 
@@ -187,15 +227,27 @@ For a bounded task or worker slice:
 
 Do not run full test/typecheck/build/browser checks after every small edit merely for reassurance.
 
-Mid-implementation execution checks are justified when they are information needed to continue, for example an uncertain shared contract/type/schema, unknown baseline state, required generated/migration output, or a genuine runtime blocker.
+Mid-implementation execution checks are justified when they are information needed to continue, for example:
 
-Final verification is risk-based, not ritual-based. Run the affected checks required by project authority and actual blast radius. Independent machine checks may run concurrently when the runtime permits.
+- a shared contract/type/schema change is uncertain;
+- baseline state is unknown and must be separated from new failures;
+- generated code/migration output is required for subsequent work;
+- implementation is genuinely blocked without runtime evidence.
+
+Final verification is risk-based, not ritual-based. Run the affected checks required by project authority and the actual blast radius. Independent machine checks may run concurrently when the runtime permits.
+
+Resource optimization never permits weakening required safety, security, business, release, or acceptance gates.
 
 ## 6. Browser/runtime and UI-review cost boundary
 
 Browser/MCP/runtime evidence can be high-context because tool results may remain in the session. In LEAN, do not load or run browser/runtime tooling by default for subjective UI review.
 
-Use it when the user/project explicitly requires it, a concrete bug can only be reproduced or distinguished at runtime, network/console/state/navigation evidence is needed to choose the implementation, or automated browser behavior is itself an acceptance criterion.
+Use it when at least one is true:
+
+- the user/project explicitly requires browser/runtime verification;
+- a concrete bug can only be reproduced or distinguished at runtime;
+- network/console/state/navigation evidence is needed to choose the implementation;
+- automated browser behavior is itself an acceptance criterion.
 
 Do not use browser automation as a substitute for a product-review owner's visual/UX judgment when a manual review surface is available.
 
@@ -207,7 +259,7 @@ Send only the task packet prepared by `coding-agent-handoff`, with exact paths/S
 
 Do not copy long transcripts, repeated source text, browser dumps, or unrelated project context.
 
-Treat long-lived context as a budget. Prefer one issue/coherent work unit per context when practical. At natural boundaries, compact or start fresh rather than carrying large completed-task history forward. Durable state belongs in the issue/PR/project source, not in an indefinitely growing session.
+Treat long-lived context as a budget. Prefer one issue/coherent work unit per context when practical. At natural boundaries, compact or start fresh rather than carrying large completed-task history forward. Durable state belongs in the issue/PR/CoMind/project source, not in an indefinitely growing session.
 
 ## 8. Output budget
 
@@ -236,7 +288,16 @@ Implementation workers should use the compact return contract defined by `coding
 
 ## 9. Earned escalation
 
-Escalate to the main owner when authority remains materially ambiguous; architecture/shared contracts, security, lifecycle, or destructive behavior are implicated; required capability/credential is unavailable; workers materially disagree; verification repeatedly fails; repeated contract-retention failures show poor task-worker fit; completing the task would cross ownership; or confidence is insufficient for a high-severity mutation/finding.
+Escalate to the main owner when:
+
+- authority remains materially ambiguous;
+- architecture/shared contracts, security, lifecycle, or destructive behavior are implicated;
+- required capability/credential is unavailable;
+- workers materially disagree;
+- verification repeatedly fails;
+- repeated contract-retention failures show poor task-worker fit;
+- completing the task would cross the worker's ownership boundary;
+- confidence is insufficient for a high-severity mutation/finding.
 
 Do not automatically launch a second reviewer for every pass. A second opinion is earned by uncertainty, severity, disagreement, a project-specific gate, or explicit FULL-mode intent.
 
@@ -244,7 +305,11 @@ Do not automatically launch a second reviewer for every pass. A second opinion i
 
 Do not rerun expensive evidence against an unchanged candidate just because the workflow phase changed.
 
-If the candidate changes, identify which evidence was invalidated, rerun only that evidence, and broaden only when blast radius is unclear.
+If the candidate changes:
+
+1. identify which evidence was invalidated;
+2. rerun only that evidence;
+3. broaden only when blast radius is unclear.
 
 At natural boundaries, compact or start a fresh context. Preserve only durable execution state such as candidate identity, open decisions, acceptance criteria, proven verification, blockers, and worker verdict/evidence locators.
 
