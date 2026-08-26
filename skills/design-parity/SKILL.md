@@ -4,6 +4,8 @@ description: >-
   Use when an exact accepted design or reference is an acceptance target and implementation must be compared against it with evidence.
 ---
 
+<!-- comind-managed-skill: design-parity -->
+
 # design-parity
 
 Read `INSTRUCTIONS.md` in this skill directory and follow it as the complete workflow for this capability.
