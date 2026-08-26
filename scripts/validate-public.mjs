@@ -50,9 +50,10 @@ else {
     if (!nameMatch || nameMatch[1].trim() !== entry.name) errors.push(`Skill frontmatter name does not match directory: ${entry.name}`);
     const ownershipMarker = `<!-- comind-managed-skill: ${entry.name} -->`;
     if (!skillText.includes(ownershipMarker)) errors.push(`Skill package missing CoMind ownership marker: ${entry.name}`);
-    const referencedSiblingDocs = [...skillText.matchAll(/`([A-Z0-9_-]+\\.md)`/g)].map((match) => match[1]);
+    const referencedSiblingDocs = [...skillText.matchAll(/`([A-Z0-9_-]+\.md)`/g)].map((match) => match[1]);
     for (const siblingDoc of new Set(referencedSiblingDocs)) {
-      if (!fs.existsSync(path.join(skillsRoot, entry.name, siblingDoc))) errors.push(`SKILL.md references missing ${siblingDoc}: ${entry.name}`);
+      const siblingFile = path.join(skillsRoot, entry.name, siblingDoc);
+      if (!fs.existsSync(siblingFile) || !fs.lstatSync(siblingFile).isFile()) errors.push(`SKILL.md references missing or non-regular ${siblingDoc}: ${entry.name}`);
     }
   }
 }
