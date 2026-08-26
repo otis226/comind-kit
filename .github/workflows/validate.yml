@@ -4,11 +4,27 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '43 * * * *'
 
 permissions:
   contents: read
 
 jobs:
+  canonical-export-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Compare candidate with trusted sanitized export
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 https://github.com/otis226/comind-kit.git refs/heads/canonical-export
+          git diff --exit-code --name-status HEAD FETCH_HEAD
+
   validate:
     runs-on: ubuntu-latest
     steps:
@@ -18,6 +34,8 @@ jobs:
           node-version: '22'
       - name: Validate public distribution
         run: node scripts/validate-public.mjs
+      - name: Test public validator regressions
+        run: node --test scripts/tests/*.test.mjs
       - name: Smoke install current checkout across native runtimes
         shell: bash
         run: |

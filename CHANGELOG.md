@@ -28,6 +28,8 @@ CoMind Kit uses Semantic Versioning for tagged releases. Until the first tag is 
 
 ### Fixed
 
+- Missing skill instruction/handoff files now fail validation; regression tests cover ownership markers and referenced regular files.
+- Public CI compares the complete candidate tree against a maintainer-produced sanitized export reference, including dotfiles and executable modes.
 - Public exports include current UI review implementation handoff files and CoMind ownership markers, so installed public skills remain recognizable as CoMind-managed during sync preflight.
 
 ### Removed

@@ -44,6 +44,7 @@ If public behavior changes, update `README.md` and `CHANGELOG.md`.
 
 ```bash
 node scripts/validate-public.mjs
+node --test scripts/tests/*.test.mjs
 ```
 
 GitHub Actions also performs an installation smoke test with the pinned Agent Skills CLI.
@@ -51,3 +52,9 @@ GitHub Actions also performs an installation smoke test with the pinned Agent Sk
 ## Breaking changes
 
 Treat renaming/removing a skill, changing a documented verdict/output contract, or materially changing orchestration semantics as a breaking public API decision. Prefer explicit migration guidance when practical.
+
+## Canonical export gate
+
+Public PRs must match the maintainer-produced `canonical-export` reference in the upstream repository. This reference contains sanitized distribution files only. It is not maintained by editing public files or regenerating a checksum inside a PR.
+
+When a contribution changes exported content, coordinate with the maintainer to update the canonical source and regenerate the public candidate and reference together. Missing reference or any content/path/mode drift fails CI. The drift job does not receive private-source credentials.
