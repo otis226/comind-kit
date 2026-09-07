@@ -30,6 +30,25 @@ A living review location should retain the current candidate SHA, verdict, inten
 
 Prefer updating the existing review location instead of creating a new comment/release/tag for every iteration.
 
+### Remote capture -> synchronized cloud storage -> reviewer
+
+When `remote-desktop-operations` defines an approved synchronized visual-artifact root, that channel is a valid reviewer-accessible temporary mechanism. Use this pattern when the app/runtime lives on a remote workstation but the reviewing runtime should inspect the exact raw screenshot independently:
+
+```text
+remote runtime
+-> capture raw screenshot/evidence
+-> write to the approved synchronized evidence root
+-> cloud sync
+-> reviewing runtime retrieves the exact file through the cloud-storage connector
+-> Product Design / CoMind reviewer inspects that artifact
+```
+
+Keep candidate identity beside the artifact or in the living review record: project/surface, route/state, viewport/device, candidate HEAD or dirty-worktree fingerprint, and capture time; include a content hash when practical. Preserve the raw original as primary evidence.
+
+Do not make the remote tool's inline image/base64 response the default when the synchronized file is available. Do not treat cloud storage as product authority or permanent release history.
+
+For the user's primary Windows workstation, follow the synchronized artifact-root convention defined by `remote-desktop-operations`; do not duplicate or invent a second machine-local path here.
+
 ## 4. Local working evidence
 
 Keep working evidence in gitignored paths such as `.tmp-verify/`, `.playwright-mcp/`, or a project equivalent.

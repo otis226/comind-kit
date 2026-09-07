@@ -116,6 +116,18 @@ DO NOT SUBSTITUTE
 
 The goal is not to enumerate every impossible variation. Block the realistic alternatives most likely to distort the approved intent.
 
+## 5A. Preserve semantic/source truth during visual polish
+
+Visual completeness never authorizes content invention. When the approved UI needs a fact that current product/domain/source authority does not provide, the implementer must not fabricate plausible labels, statuses, hardware/device identity, capabilities, timestamps, events, versions, or business actions merely to make the composition feel complete.
+
+Do not reinterpret a generic boolean, enum, route characteristic, fixture field, or implementation name into more specific user-facing business meaning unless that meaning is explicitly supported by the governing contract. Prefer, in order:
+
+1. omit an optional fact that is not known;
+2. use a neutral source-safe value such as `Not specified` only when the UI genuinely requires a visible value;
+3. derive a presentation field only when the derivation is unambiguous from current source authority.
+
+Demo/fixture facts belong in explicit fixture/repository contracts rather than hardcoded presentation fallbacks. If a polished layout depends on invented content, fix the composition instead of inventing domain truth.
+
 ## 6. Keep dispatch prompts short
 
 For a genuinely small isolated UI change, the contract may be inline.

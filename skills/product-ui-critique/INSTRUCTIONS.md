@@ -8,7 +8,7 @@ It answers:
 
 > What is actually wrong, why does it matter, what should change, and what should remain untouched?
 
-It does **not** choose project source priority, design authority, review mode, business rules, or release acceptance.
+It does **not** choose project source priority, design authority, review mode, business rules, release acceptance, or first-design composition.
 
 Compose it with:
 
@@ -26,7 +26,27 @@ CHANGE MUST EARN ITS COST
 PRODUCT UI != MARKETING UI
 AUTHORITY OVER PERSONAL TASTE
 OBSERVATION BEFORE INFERENCE
+CRITIQUE AFTER CONCEPT, NOT AS THE CONCEPT PROMPT
 ```
+
+## 0. Do not turn critique into first-design constraints
+
+This skill is intentionally convergent. It should challenge an existing concept or implementation after there is something concrete to judge.
+
+Do not paste its full heuristic/anti-slop checklist into a first-design prompt. Doing so can convert useful evaluation criteria into premature layout constraints and encourage safe, generic, checklist-driven UI.
+
+For substantial new composition, use the staged workflow from `ui-design-authority`:
+
+```text
+compact Design Safety Envelope
+→ fresh first-design exploration
+→ product/domain compliance
+→ systemization
+→ implementation
+→ critique/review
+```
+
+Only hard invariants belong in the initial safety envelope. The rest of this document is primarily a review lens.
 
 ## 1. Default posture
 

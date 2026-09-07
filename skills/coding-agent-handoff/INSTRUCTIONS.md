@@ -8,7 +8,7 @@ Use it after the main owner has decided that delegation is worthwhile.
 
 Apply `llm-resource-governor` for LEAN vs FULL mode, whether to delegate, task-worker fit, concurrency/fan-out, context/output budgets, escalation discipline, verification economics, and evidence reuse.
 
-Execution stays inside the current runtime using that runtime's native isolated context, subagent, or equivalent mechanism.
+Execution normally stays inside the current runtime using that runtime's native isolated context, subagent, or equivalent mechanism. When the user deliberately wants a local or external coding harness and the current assistant has authorized remote-machine access, preserve the same ownership/task packet and route execution through `remote-desktop-operations`; the harness is an execution surface, not task authority.
 
 ## 1. Define ownership before dispatch
 
@@ -63,11 +63,13 @@ coding agent
 
 Do not ask the coding agent to rediscover product semantics that the main owner can resolve from authority first.
 
+When the main owner has already diagnosed the mechanism and repair direction from live source, prefer **plan-first bounded dispatch**: write an execution-ready plan with the exact owned slice, material change points, `KEEP / CHANGE / DO NOT CHANGE`, observable acceptance, and stop boundary. The worker may refine local implementation details after reading current HEAD, but should not be asked to rediscover the task or architecture as ceremony. Once dispatched, let one worker complete the coherent slice; do not repeatedly micro-prompt, cancel, or restart it unless live evidence shows scope drift, a blocker/stall, or an authority/contract change that invalidates the packet.
+
 For LEAN parallel coding, resolve shared invariants/contracts before dispatch, then freeze non-overlapping ownership boundaries. Parallelize implementation only when workers can proceed without waiting on unresolved output from another writer.
 
 Do not dispatch several workers to independently investigate the same root cause as a default speed strategy. Reason centrally first; execute independent coding slices in parallel second.
 
-Do not over-prescribe stale implementation details when the codebase is changing. Prefer outcome-level implementation constraints and known reuse boundaries; let the coding agent inspect current HEAD and produce the concrete implementation plan.
+Do not over-prescribe stale implementation details when the codebase is changing. The owner's plan should freeze the resolved direction, acceptance, ownership, and known reuse boundaries; let the coding agent inspect current HEAD and adapt exact file/function sequencing inside that boundary.
 
 Historical SHAs are provenance unless explicitly fixed as the target candidate. At execution time, re-resolve live HEAD/current worktree when the task depends on current implementation.
 
@@ -226,9 +228,9 @@ selected role
 → compact result/evidence
 ```
 
-CoMind does not launch another coding runtime, proxy credentials, select a provider/model, or maintain a role-to-provider mapping.
+This handoff workflow does not itself own another coding runtime, proxy credentials, select a provider/model, or maintain a role-to-provider mapping.
 
-If the user deliberately wants another runtime, preserve the same task packet and role contract, then invoke them from that runtime directly outside this handoff workflow.
+If the user deliberately wants another runtime or local harness, preserve the same task packet and role contract. Invoke it from that runtime directly, or use `remote-desktop-operations` when the current assistant has authorized remote-machine access. The launch, process supervision, model/mode verification, and terminal transport remain outside this handoff workflow.
 
 ## 5. Worker execution contract
 

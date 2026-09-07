@@ -1,7 +1,7 @@
 ---
 name: ui-review
 description: >-
-  Use for deep-by-default UI/UX review against the strongest available product, business, and design authority; classify the user's dominant work pattern, route into parity/coherence/design-quality review, seek the strongest useful evidence, and return prioritized findings with explicit verification contracts without confusing observation, inference, design evidence, and business truth.
+  Use as the default lean UI review workflow: choose FLOW, VISUAL, BOTH, or PARITY; reason about behavior from structured semantic UI evidence, judge experience from rendered evidence, enforce reuse-before-create on mature product surfaces, and keep PASS scoped to current candidate evidence.
 ---
 
 <!-- comind-managed-skill: ui-review -->

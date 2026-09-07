@@ -16,7 +16,7 @@ The canonical unit is an Agent Skill. CoMind Kit does not ship permanent special
 
 ```text
 senior-dev
-= main owner / architecture / integration
+= authority / root cause / architecture / mutation ownership / integration / final verdict
 
 llm-resource-governor
 = execution mode + delegation/resource discipline

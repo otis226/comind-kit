@@ -161,6 +161,8 @@ There is no universal `two failures` rule. One high-consequence miss may justify
 
 Longer prompts are not automatically safer. Preserve the minimum-sufficient-context rule; extra text that does not change authority, scope, acceptance, or evidence can reduce clarity for any model.
 
+Treat time-to-first-useful-mutation and pre-mutation tool count as throughput evidence, not fixed stop thresholds. A worker may legitimately spend longer reading when each step narrows uncertainty toward the owned slice. Intervene when exploration is non-convergent: repeated rereads, advisor/fan-out expansion, or widening source scope without materially new evidence, an implementation decision, or an explicit blocker. Do not kill a worker solely because a universal number of seconds, turns, or reads has elapsed.
+
 ## 4. Fan-out and parallelism
 
 Do not spawn workers merely because the runtime supports them.

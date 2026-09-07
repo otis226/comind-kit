@@ -29,4 +29,4 @@ Agent Skill / explicit agent defines WHICH role/behavior executes
 current runtime executes HOW through its native context/subagent/tooling
 ```
 
-CoMind does not select providers/models or spawn another runtime. If a user wants another runtime, invoke the same role/task packet from that runtime directly.
+`coding-agent-handoff` does not select providers/models. If execution should happen in another runtime, reuse the same role/task packet there. When the current assistant has authorized remote-machine access, `remote-desktop-operations` may perform the actual launch/inspection; that execution mechanism does not transfer provider/model-routing ownership into this skill.
