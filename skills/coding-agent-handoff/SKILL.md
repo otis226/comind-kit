@@ -1,7 +1,7 @@
 ---
 name: coding-agent-handoff
 description: >-
-  Use when a main owner delegates bounded implementation, inspection, or review and needs an explicit ownership map, compact task packet, native role dispatch, LEAN-aware verification sequencing, and integration-ready return contract.
+  Use when a main owner delegates bounded implementation, inspection, or review and needs an explicit ownership map, compact task packet, execution-surface-aware role dispatch, LEAN-aware verification sequencing, and integration-ready return contract.
 ---
 
 <!-- comind-managed-skill: coding-agent-handoff -->
@@ -26,7 +26,7 @@ Responsibility boundary:
 llm-resource-governor decides EXECUTION MODE + WHEN to delegate
 coding-agent-handoff defines WHAT the worker owns/receives/returns + verification sequencing
 Agent Skill / explicit agent defines WHICH role/behavior executes
-current runtime executes HOW through its native context/subagent/tooling
+current execution surface executes HOW; native context/subagent/tooling is the default
 ```
 
-`coding-agent-handoff` does not select providers/models. If execution should happen in another runtime, reuse the same role/task packet there. When the current assistant has authorized remote-machine access, `remote-desktop-operations` may perform the actual launch/inspection; that execution mechanism does not transfer provider/model-routing ownership into this skill.
+`coding-agent-handoff` does not select providers/models. If execution should happen in another runtime or local harness, reuse the same role/task packet there. A separately authorized remote-machine execution capability may perform the actual launch/inspection; that execution mechanism does not transfer provider/model-routing ownership into this skill.

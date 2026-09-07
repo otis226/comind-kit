@@ -24,7 +24,7 @@ llm-resource-governor
 coding-agent-handoff
 = worker ownership + task packet + dispatch/result contract
 
-remote-desktop-operations
+authorized remote-machine execution capability
 = authorized machine/repository/process/runtime execution surface
 
 bounded-code-worker
@@ -126,7 +126,7 @@ Apply `llm-resource-governor` for whether delegation is worthwhile and how much 
 
 LEAN remains the default execution mode. The main owner owns the outcome, not necessarily every line of code.
 
-Do not delegate execution ceremony merely because an AI worker is available. When authorized deterministic tooling can do the job directly, prefer direct owner execution for source search, Git/worktree inspection, logs, tests, process/port checks, local server lifecycle, database inspection, release/merge scripts, and candidate verification. Use `remote-desktop-operations` when the work materially involves an authorized local machine.
+Do not delegate execution ceremony merely because an AI worker is available. When authorized deterministic tooling can do the job directly, prefer direct owner execution for source search, Git/worktree inspection, logs, tests, process/port checks, local server lifecycle, database inspection, release/merge scripts, and candidate verification. Use an authorized remote-machine execution capability when the work materially involves an authorized local machine.
 
 Coding workers are most useful for meaningful code generation, bounded refactors, and independent frontend/backend/module slices after shared contracts are resolved. Choose the role by concern and authority; prefer ounded-code-worker for a normal implementation slice unless the project defines a more specific bounded role.
 

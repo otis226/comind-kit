@@ -24,9 +24,9 @@ WHEN EVIDENCE CAN BE REUSED
 It does not own architecture, worker ownership, task-packet structure, runtime/provider/model selection, or final product acceptance.
 
 - `senior-dev` owns authority, architecture, integration, and final decision.
-- `coding-agent-handoff` owns worker scope, task packets, native dispatch, and return contracts.
+- `coding-agent-handoff` owns worker scope, task packets, execution-surface-aware dispatch, and return contracts.
 - The selected Agent Skill/agent defines the role.
-- The current runtime executes that role natively.
+- The current runtime owns the execution surface for that role. Native context/subagent/tooling is the default; a separately authorized remote-machine execution capability may mediate a local harness without making CoMind the provider/model router.
 
 ## 1. Execution mode
 
@@ -99,7 +99,7 @@ Review/runtime delegation is normally escalation-only in LEAN and broader in FUL
 
 Do not delegate tiny work when packet construction and integration cost more than direct execution.
 
-Choose the role by concern and authority. Runtime/provider/model selection is outside this skill. CoMind does not route or proxy between runtimes.
+Choose the role by concern and authority. Runtime/provider/model selection is outside this skill. CoMind does not route or proxy credentials/models between runtimes; a separately authorized remote-machine execution capability may still mediate a local harness as an execution surface owned by the current runtime.
 
 ## 3. Match task shape to observed worker capability
 
@@ -192,7 +192,7 @@ three workers investigate the same bug
 → two reviewers reread the same candidate
 ```
 
-Do not parallelize writers that must edit the same shared region or where one worker depends on another worker's unresolved output.
+Do not parallelize writers that must edit the same shared region or where one worker depends on another worker's unresolved output. While a worker owns a worktree, the main owner may do read-only or otherwise non-conflicting preparation, or work in another isolated worktree. Do not mutate the worker's worktree or run candidate verification against a moving target. If no useful independent work exists, wait and monitor rather than manufacture overlapping work.
 
 ### FULL
 

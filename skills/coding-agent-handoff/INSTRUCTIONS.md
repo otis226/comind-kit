@@ -8,7 +8,7 @@ Use it after the main owner has decided that delegation is worthwhile.
 
 Apply `llm-resource-governor` for LEAN vs FULL mode, whether to delegate, task-worker fit, concurrency/fan-out, context/output budgets, escalation discipline, verification economics, and evidence reuse.
 
-Execution normally stays inside the current runtime using that runtime's native isolated context, subagent, or equivalent mechanism. When the user deliberately wants a local or external coding harness and the current assistant has authorized remote-machine access, preserve the same ownership/task packet and route execution through `remote-desktop-operations`; the harness is an execution surface, not task authority.
+Execution normally stays inside the current runtime using that runtime's native isolated context, subagent, or equivalent mechanism. When the user deliberately wants a local or external coding harness and a separately authorized remote-machine execution capability is available, preserve the same ownership/task packet and route execution through that capability; the harness is an execution surface, not task authority.
 
 ## 1. Define ownership before dispatch
 
@@ -218,19 +218,29 @@ If the worker misses the same explicit acceptance class after the contract has b
 
 Do not use a fixed failure-count rule. Severity and the repeated error class determine whether to correct, restructure, or escalate.
 
-## 4. Dispatch the role natively
+## 4. Dispatch through the selected execution surface
 
-Select the Agent Skill or explicit agent definition first, then use the current runtime's native isolation mechanism.
+Select the Agent Skill or explicit agent definition first. Use the current runtime's native isolation mechanism by default. When the user deliberately wants another runtime or local harness and a separately authorized remote-machine execution capability is available, preserve the same role/task packet through that execution surface.
 
 ```text
 selected role
-→ native context / subagent / equivalent runtime mechanism
+→ current execution surface
+   → native context / subagent by default
+   → authorized remote-mediated harness when applicable
 → compact result/evidence
 ```
 
 This handoff workflow does not itself own another coding runtime, proxy credentials, select a provider/model, or maintain a role-to-provider mapping.
 
-If the user deliberately wants another runtime or local harness, preserve the same task packet and role contract. Invoke it from that runtime directly, or use `remote-desktop-operations` when the current assistant has authorized remote-machine access. The launch, process supervision, model/mode verification, and terminal transport remain outside this handoff workflow.
+If the user deliberately wants another runtime or local harness, preserve the same task packet and role contract. Invoke it from that runtime directly, or use a separately authorized remote-machine execution capability when available. The launch, process supervision, model/mode verification, and terminal transport remain outside this handoff workflow.
+
+### 4A. Active writer and owner-side concurrency boundary
+
+Once a write worker is dispatched into a worktree, treat that worker as the active writer for the owned slice until it completes, blocks, or is explicitly stopped. The main owner must not concurrently mutate the same worktree, run generators/formatters that write into it, or start another writer in the same shared region.
+
+The main owner may monitor progress through the current execution surface and may do independent owner-side preparation that cannot alter the worker's candidate: read-only authority/reference review, acceptance/checklist preparation, test-scenario planning, evidence/reference preparation, or work in a separate isolated worktree. Do not run final candidate verification against a moving target. If no useful independent work exists, wait and monitor; do not create overlapping work merely to stay busy.
+
+When the worker stops, freeze/re-resolve the resulting candidate before owner review.
 
 ## 5. Worker execution contract
 
@@ -314,7 +324,7 @@ The main owner:
 11. records accepted candidate/evidence and closes the issue only after that acceptance;
 12. runs project-required final review/ship gates according to the project's actual release boundary.
 
-Worker PASS proves only the assigned concern.
+Worker PASS proves only the assigned concern. Reuse still-valid worker checks tied to the exact candidate instead of rerunning them as ceremony; the main owner adds only the remaining integrated/risk-based verification required by the actual blast radius and project gate.
 
 In LEAN, do not add visual/runtime/browser review after integration merely as a completion ritual. Hand off explicit manual/product-review scenarios unless project authority or concrete unresolved evidence requires those agents/tools.
 

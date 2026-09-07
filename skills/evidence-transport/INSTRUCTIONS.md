@@ -32,7 +32,7 @@ Prefer updating the existing review location instead of creating a new comment/r
 
 ### Remote capture -> synchronized cloud storage -> reviewer
 
-When `remote-desktop-operations` defines an approved synchronized visual-artifact root, that channel is a valid reviewer-accessible temporary mechanism. Use this pattern when the app/runtime lives on a remote workstation but the reviewing runtime should inspect the exact raw screenshot independently:
+When an authorized remote-machine execution capability defines an approved synchronized visual-artifact root, that channel is a valid reviewer-accessible temporary mechanism. Use this pattern when the app/runtime lives on a remote workstation but the reviewing runtime should inspect the exact raw screenshot independently:
 
 ```text
 remote runtime
@@ -47,7 +47,7 @@ Keep candidate identity beside the artifact or in the living review record: proj
 
 Do not make the remote tool's inline image/base64 response the default when the synchronized file is available. Do not treat cloud storage as product authority or permanent release history.
 
-For the user's primary Windows workstation, follow the synchronized artifact-root convention defined by `remote-desktop-operations`; do not duplicate or invent a second machine-local path here.
+For a remote workstation, follow the synchronized artifact-root convention defined by the current authorized remote-machine execution environment; do not duplicate or invent a second machine-local path here.
 
 ## 4. Local working evidence
 
